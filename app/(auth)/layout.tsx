@@ -17,7 +17,7 @@ export default function AuthLayout({ children }: React.PropsWithChildren) {
       <main className='absolute left-1/2 top-1/2 flex w-full -translate-x-1/2 -translate-y-1/2 items-center lg:static lg:left-0 lg:top-0 lg:flex lg:translate-x-0 lg:translate-y-0'>
         {children}
       </main>
-      <div className='relative aspect-video size-full'>
+      <div className='relative hidden lg:block'>
         <Image
           src='/images/auth-layout.webp'
           alt='A skateboarder doing a high drop'

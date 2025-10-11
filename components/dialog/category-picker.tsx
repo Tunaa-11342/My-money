@@ -43,14 +43,15 @@ function CategoryPicker({ type, onChange, userId }: Props) {
   const selectedCategory = categoriesQuery.data?.find(
     (category: Category) => category.name === value
   )
+  const { refetch } = categoriesQuery
 
   const successCallback = useCallback(
     (category: Category) => {
       setValue(category.name)
-      categoriesQuery.refetch() 
+      refetch() 
       setOpen((prev) => !prev)
     },
-    [setValue, setOpen]
+    [setValue, setOpen, refetch]
   )
 
   return (
