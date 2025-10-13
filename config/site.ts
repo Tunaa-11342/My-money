@@ -1,6 +1,6 @@
-import { FooterItem, MainNavItem } from '@/types'
+import { FooterItem, MainNavItem } from "@/types";
 
-export type SiteConfig = typeof siteConfig
+export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
   name: "My Money",
@@ -9,99 +9,104 @@ export const siteConfig = {
   ogImage: "/og-image.png",
   mainNav: [
     {
-      title: 'Lobby',
+      title: "Lobby",
       items: [
         {
-          title: 'Products',
-          href: '/products',
-          description: 'All the products we have to offer.',
+          title: "Products",
+          href: "/products",
+          description: "All the products we have to offer.",
           items: [],
         },
         {
-          title: 'Build a Board',
-          href: '/build-a-board',
-          description: 'Build your own custom skateboard.',
+          title: "Build a Board",
+          href: "/build-a-board",
+          description: "Build your own custom skateboard.",
           items: [],
         },
         {
-          title: 'Blog',
-          href: '/blog',
-          description: 'Read our latest blog posts.',
+          title: "Blog",
+          href: "/blog",
+          description: "Read our latest blog posts.",
           items: [],
         },
       ],
     },
     {
-      title: 'Tổng quan',
-      href: '/dashboard',
-      description: 'Manage your account and orders.',
+      title: "Tổng quan",
+      href: "/dashboard",
+      description: "Manage your account and orders.",
     },
     {
-      title: 'Giao dịch',
-      href: '/transactions',
-      description: 'Manage your account and orders.',
+      title: "Giao dịch",
+      href: "/transactions",
+      description: "Manage your account and orders.",
     },
     {
-      title: 'Tùy chỉnh',
-      href: '/manage',
-      description: 'Manage your account and orders.',
+      title: "Nhóm",
+      href: "/group",
+      description: "Manage your account and orders.",
+    },
+    {
+      title: "Tùy chỉnh",
+      href: "/manage",
+      description: "Manage your account and orders.",
     },
   ] satisfies MainNavItem[],
   footerNav: [
     {
-      title: 'Credits',
+      title: "Credits",
       items: [
         {
-          title: 'OneStopShop',
-          href: 'https://onestopshop.jackblatch.com',
+          title: "OneStopShop",
+          href: "https://onestopshop.jackblatch.com",
           external: true,
         },
         {
-          title: 'Acme Corp',
-          href: 'https://acme-corp.jumr.dev',
+          title: "Acme Corp",
+          href: "https://acme-corp.jumr.dev",
           external: true,
         },
         {
-          title: 'craft.mxkaske.dev',
-          href: 'https://craft.mxkaske.dev',
+          title: "craft.mxkaske.dev",
+          href: "https://craft.mxkaske.dev",
           external: true,
         },
         {
-          title: 'Taxonomy',
-          href: 'https://tx.shadcn.com/',
+          title: "Taxonomy",
+          href: "https://tx.shadcn.com/",
           external: true,
         },
         {
-          title: 'shadcn/ui',
-          href: 'https://ui.shadcn.com',
+          title: "shadcn/ui",
+          href: "https://ui.shadcn.com",
           external: true,
         },
       ],
     },
     {
-      title: 'Help',
+      title: "Help",
       items: [
         {
-          title: 'About',
-          href: '/about',
+          title: "About",
+          href: "/about",
           external: false,
         },
         {
-          title: 'Contact',
-          href: '/contact',
+          title: "Contact",
+          href: "/contact",
           external: false,
         },
         {
-          title: 'Terms',
-          href: '/terms',
+          title: "Terms",
+          href: "/terms",
           external: false,
         },
         {
-          title: 'Privacy',
-          href: '/privacy',
+          title: "Privacy",
+          href: "/privacy",
           external: false,
         },
       ],
     },
   ] satisfies FooterItem[],
-}
+};

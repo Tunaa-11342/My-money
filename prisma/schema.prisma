@@ -71,3 +71,23 @@ model YearHistory {
 
   @@id([month, year, userId])
 }
+
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  isPrivate   Boolean  @default(false)
+  inviteToken String?  @unique
+  createdAt   DateTime @default(now())
+  maxMembers  Int      @default(5)
+  members     Member[]
+}
+
+model Member {
+  id        String   @id @default(cuid())
+  userId    String
+  groupId   String
+  role      String   @default("member")
+  joinedAt  DateTime @default(now())
+
+  group     Group    @relation(fields: [groupId], references: [id])
+}

@@ -48,3 +48,13 @@ export function GetFormatterForCurrency(currency: string) {
     currency,
   })
 }
+
+export function formatCurrency(amount: number, currency: string = 'VND') {
+  const locale = Currencies.find((c) => c.value === currency)?.locale || 'vi-VN'
+
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+  }).format(amount)
+}
