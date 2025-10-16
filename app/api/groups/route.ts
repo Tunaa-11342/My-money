@@ -3,7 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { currentUser } from "@clerk/nextjs/server";
 import { randomUUID } from "crypto";
 
-
+/**
+ * Lấy danh sách nhóm mà user đang tham gia
+ */
 export async function GET() {
   try {
     const user = await currentUser();
