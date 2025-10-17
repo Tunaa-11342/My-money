@@ -1,87 +1,64 @@
-import { prisma } from "@/lib/prisma";
-import { currentUser } from "@clerk/nextjs/server";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import CreateGroupDialog from "@/components/dialog/create-room";
+import { CreateGroupDialog } from '@/components/dialog/create-group'
+import { JoinGroupDialog } from '@/components/dialog/join-group'
+import { prisma } from '@/lib/prisma'
+import { currentUser } from '@clerk/nextjs/server'
 
 export default async function GroupPage() {
-  const user = await currentUser();
-  if (!user) {
-    return (
-      <div className="p-6 text-center text-neutral-400">
-        Bạn cần đăng nhập để xem danh sách nhóm.
-      </div>
-    );
-  }
+  const user = await currentUser()
+  if (!user) return <p className="p-4">Vui lòng đăng nhập để xem nhóm</p>
 
-  // ✅ Lấy các nhóm mà user là thành viên
-  const memberships = await prisma.member.findMany({
+  // ⚙️ Lấy nhóm trực tiếp bằng Prisma
+  const memberships = await prisma.membership.findMany({
     where: { userId: user.id },
-    include: { group: true },
-  });
+    include: {
+      group: {
+        include: {
+          _count: { select: { memberships: true } },
+        },
+      },
+    },
+  })
 
-  const groups = memberships.map((m) => m.group);
+  const groups = memberships.map((m) => ({
+    id: m.group.id,
+    name: m.group.name,
+    budget: m.group.budget,
+    periodDays: m.group.periodDays,
+    memberCount: m.group._count.memberships,
+    role: m.role,
+  }))
 
   return (
-    <div className="p-6 text-white">
-      {/* Header + các nút hành động */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Danh sách nhóm 💬</h1>
-
-        <div className="flex items-center gap-2">
-          {/* Nút mở dialog tạo nhóm */}
-          <CreateGroupDialog
-            trigger={
-              <Button className="bg-emerald-500 hover:bg-emerald-600 text-white">
-                + Tạo nhóm
-              </Button>
-            }
-          />
-
-          {/* Nút tham gia nhóm */}
-          <Link href="/group/join">
-            <Button
-              variant="outline"
-              className="border-neutral-700 text-neutral-300 hover:bg-neutral-800"
-            >
-              Tham gia nhóm
-            </Button>
-          </Link>
+    <div className="container py-10">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Danh sách nhóm</h1>
+        <div className="flex gap-2">
+          <CreateGroupDialog />
+          <JoinGroupDialog />
         </div>
       </div>
 
-      {/* Danh sách nhóm */}
       {groups.length === 0 ? (
-        <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-4 text-center text-neutral-400">
-          Hiện bạn chưa tham gia nhóm nào.
-        </div>
+        <p>Chưa có nhóm nào.</p>
       ) : (
-        <div className="flex flex-col gap-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {groups.map((group) => (
-            <div
+            <a
               key={group.id}
-              className="flex justify-between items-center border border-neutral-800 bg-neutral-900 rounded-xl p-4"
+              href={`/group/${group.id}`}
+              className="p-4 border rounded-lg hover:bg-accent transition"
             >
-              <div>
-                <h2 className="text-lg font-semibold">{group.name}</h2>
-                <p className="text-sm text-neutral-400">
-                  ID nhóm: <span className="font-mono">{group.id}</span>
-                  <br />
-                  {group.isPrivate ? "🔒 Riêng tư" : "🌐 Công khai"}
-                </p>
-              </div>
-              <Link href={`/group/${group.id}/dashboard`}>
-                <Button
-                  variant="outline"
-                  className="border-neutral-700 text-emerald-400 hover:bg-neutral-800"
-                >
-                  Xem chi tiết →
-                </Button>
-              </Link>
-            </div>
+              <h2 className="font-semibold text-lg">{group.name}</h2>
+              <p className="text-sm text-muted-foreground">
+                Thành viên: {group.memberCount}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Vai trò: {group.role === 'owner' ? 'Trưởng nhóm' : 'Thành viên'}
+              </p>
+            </a>
           ))}
         </div>
       )}
     </div>
-  );
+  )
 }

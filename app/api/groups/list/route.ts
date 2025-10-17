@@ -5,26 +5,32 @@ import { currentUser } from '@clerk/nextjs/server'
 export async function GET() {
   try {
     const user = await currentUser()
-    if (!user) {
-      // Nếu chưa đăng nhập thì trả về mảng trống, không lỗi
-      return NextResponse.json([], { status: 200 })
-    }
+    if (!user) return NextResponse.json([], { status: 200 })
 
-    // ✅ Lấy tất cả nhóm mà user này là thành viên
-    const memberships = await prisma.member.findMany({
-      where: { userId: user.id },
-      include: { group: true },
-    })
+const memberships = await prisma.membership.findMany({
+  where: { userId: user.id },
+  include: {
+    group: {
+      include: {
+        _count: { select: { memberships: true } }, // đếm ở DB
+      },
+    },
+  },
+})
 
-    // ✅ Trích danh sách nhóm
-    const groups = memberships.map((m) => m.group)
+const groups = memberships.map((m) => ({
+  id: m.group.id,
+  name: m.group.name,
+  budget: m.group.budget,
+  periodDays: m.group.periodDays,
+  memberCount: m.group._count.memberships, // đếm 
+  isPrivate: m.group.isPrivate,
+  role: m.role,
+}))
 
     return NextResponse.json(groups)
   } catch (error) {
-    console.error('[GROUP_GET_ALL_ERROR]', error)
-    return NextResponse.json(
-      { error: 'Lỗi máy chủ khi tải danh sách nhóm' },
-      { status: 500 }
-    )
+    console.error('Error fetching groups:', error)
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }

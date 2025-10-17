@@ -19,6 +19,8 @@ model User {
   name      String?
   password  String
   createdAt DateTime    @default(now())
+  imageUrl  String?
+  memberships Membership[]
 }
 
 model UserSettings {
@@ -73,21 +75,43 @@ model YearHistory {
 }
 
 model Group {
-  id          String   @id @default(cuid())
-  name        String
-  isPrivate   Boolean  @default(false)
-  inviteToken String?  @unique
-  createdAt   DateTime @default(now())
-  maxMembers  Int      @default(5)
-  members     Member[]
+  id           String       @id @default(cuid())
+  name         String
+  budget       Int          @default(0)
+  periodDays   Int          @default(30)
+  isPrivate    Boolean      @default(false)
+  ownerId      String
+  memberships  Membership[]
+  expenses     Expense[]
+  createdAt    DateTime     @default(now())
 }
 
-model Member {
+model Membership {
   id        String   @id @default(cuid())
   userId    String
   groupId   String
   role      String   @default("member")
-  joinedAt  DateTime @default(now())
-
   group     Group    @relation(fields: [groupId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+enum ExpenseCategory {
+  food
+  transport
+  shopping
+  entertainment
+  other
+}
+
+model Expense {
+  id            String   @id @default(cuid())
+  name          String
+  amount        Int
+  categoryName  ExpenseCategory 
+  note          String?
+  createdBy     String
+  groupId       String
+  group         Group    @relation(fields: [groupId], references: [id])
+  createdAt     DateTime @default(now())
 }
