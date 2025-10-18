@@ -26,7 +26,7 @@ export default function IndexPage() {
             className='max-w-2xl animate-fade-up text-balance leading-normal text-muted-foreground sm:text-xl sm:leading-8'
             style={{ animationDelay: '0.30s', animationFillMode: 'both' }}
           >
-            Vài câu quếti
+            Viết gì đó 
           </p>
           <div
             className='flex animate-fade-up flex-wrap items-center justify-center gap-4'
@@ -34,7 +34,7 @@ export default function IndexPage() {
           >
             <Button asChild>
               <Link href='/wizard'>
-                GO Go
+                Bắt đầu
                 <span className='sr-only'>gogo</span>
               </Link>
             </Button>
