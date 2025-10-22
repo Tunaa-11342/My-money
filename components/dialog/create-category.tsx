@@ -77,7 +77,7 @@ function CreateCategoryDialog({
         type,
       });
 
-      toast.success(`Category ${data.name} created successfully 🎉`, {
+      toast.success(`Danh mục ${data.name} đã được tạo thành công 🎉`, {
         id: "create-category",
       });
 
@@ -90,7 +90,7 @@ function CreateCategoryDialog({
       setOpen((prev) => !prev);
     },
     onError: () => {
-      toast.error("Something went wrong", {
+      toast.error("Có gì đó sai xảy ra", {
         id: "create-category",
       });
     },
@@ -98,7 +98,7 @@ function CreateCategoryDialog({
 
   const onSubmit = useCallback(
     (values: CreateCategorySchemaType) => {
-      toast.loading("Creating category...", {
+      toast.loading("Đang tạo danh mục...", {
         id: "create-category",
       });
       mutate(values);

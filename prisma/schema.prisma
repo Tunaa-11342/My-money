@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -17,7 +11,7 @@ model User {
   id          String       @id @default(cuid())
   email       String       @unique
   name        String?
-  password    String?
+  password    String
   createdAt   DateTime     @default(now())
   imageUrl    String?
   memberships Membership[]
@@ -40,16 +34,14 @@ model Category {
 }
 
 model Transaction {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
-  updateAt  DateTime @default(now())
-
-  amount      Float
-  description String
-  date        DateTime
-  userId      String
-  type        String   @default("income")
-
+  id           String   @id @default(uuid())
+  createdAt    DateTime @default(now())
+  updateAt     DateTime @default(now())
+  amount       Float
+  description  String
+  date         DateTime
+  userId       String
+  type         String   @default("income")
   category     String
   categoryIcon String
 }
@@ -78,14 +70,14 @@ model YearHistory {
 model Group {
   id          String       @id @default(cuid())
   name        String
-  budget      Int          @default(0)
-  periodDays  Int          @default(30)
   isPrivate   Boolean      @default(false)
-  ownerId     String
-  memberships Membership[]
-  expenses    Expense[]
   createdAt   DateTime     @default(now())
+  budget      Int          @default(0)
+  ownerId     String
+  periodDays  Int          @default(30)
   inviteCode  String       @unique @default("")
+  expenses    Expense[]
+  memberships Membership[]
 }
 
 model Membership {
@@ -93,8 +85,28 @@ model Membership {
   userId    String
   groupId   String
   role      String   @default("member")
+  createdAt DateTime @default(now())
   group     Group    @relation(fields: [groupId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
+}
+
+model Expense {
+  id           String          @id @default(cuid())
+  name         String
+  amount       Int
+  note         String?
+  createdBy    String
+  groupId      String
+  createdAt    DateTime        @default(now())
+  categoryName ExpenseCategory
+  group        Group           @relation(fields: [groupId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  message   String
+  read      Boolean  @default(false)
   createdAt DateTime @default(now())
 }
 
@@ -104,24 +116,4 @@ enum ExpenseCategory {
   shopping
   entertainment
   other
-}
-
-model Expense {
-  id           String          @id @default(cuid())
-  name         String
-  amount       Int
-  categoryName ExpenseCategory
-  note         String?
-  createdBy    String
-  groupId      String
-  group        Group           @relation(fields: [groupId], references: [id])
-  createdAt    DateTime        @default(now())
-}
-
-model Notification {
-  id        String   @id @default(cuid())
-  userId    String
-  message   String
-  read      Boolean  @default(false)
-  createdAt DateTime @default(now())
 }
