@@ -25,7 +25,6 @@ export function CreateGroupDialog() {
   })
 
   const handleSubmit = async () => {
-    // kiểm tra dữ liệu trước khi gửi
     if (!form.name.trim()) {
       setError('Tên nhóm không được để trống.')
       return

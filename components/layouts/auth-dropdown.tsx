@@ -71,7 +71,7 @@ export function AuthDropdown({ user, className, ...props }: AuthDropdownProps) {
               <DropdownMenuItem asChild>
                 <Link href='/manage'>
                   <GearIcon className='mr-2 size-4' aria-hidden='true' />
-                  Danh mục
+                  Cài đặt
                   <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
                 </Link>
               </DropdownMenuItem>

@@ -14,7 +14,7 @@ export async function getCacheUserSetting(userId: string) {
     },
     ['userSettings'],
     {
-      revalidate: 60, // every hour
+      revalidate: 60, 
       tags: ['userSettings'],
     }
   )()

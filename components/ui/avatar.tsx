@@ -4,13 +4,11 @@ import * as React from "react"
 import * as AvatarPrimitive from "@radix-ui/react-avatar"
 import { cn } from "@/lib/utils"
 
-// Danh sách emoji con vật
 const ANIMALS = [
   "🦊","🐼","🐨","🐯","🐶","🐱","🦁","🐮","🐷","🐸","🐵",
   "🐰","🦄","🐹","🦓","🐻","🦉","🦔","🦘","🦝","🦙","🦒","🐧","🐢",
 ]
 
-// Màu nền nhạt để random ổn định theo seed
 const COLORS = [
   "bg-rose-100 text-rose-700",
   "bg-orange-100 text-orange-700",
@@ -24,7 +22,6 @@ const COLORS = [
   "bg-fuchsia-100 text-fuchsia-700",
 ]
 
-// Hàm hash đơn giản để chọn màu & emoji ổn định
 function hash(seed: string) {
   let h = 0
   for (let i = 0; i < seed.length; i++) {

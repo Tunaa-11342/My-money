@@ -32,7 +32,7 @@ function DeleteCategoryDialog({ category, trigger, userId }: Props) {
   const deleteMutation = useMutation({
     mutationFn: (values: DeleteCategorySchemaType) => deleteCategory(userId, values),
     onSuccess: async () => {
-      toast.success('Category deleted successfully', {
+      toast.success('Danh mục đã được xóa thành công', {
         id: categoryIdentifier,
       })
 
@@ -60,7 +60,7 @@ function DeleteCategoryDialog({ category, trigger, userId }: Props) {
           <AlertDialogCancel>Hủy bỏ</AlertDialogCancel>
           <AlertDialogAction
             onClick={() => {
-              toast.loading('Deleting category...', {
+              toast.loading('Đang xóa danh mục...', {
                 id: categoryIdentifier,
               })
               deleteMutation.mutate({

@@ -15,12 +15,10 @@ export async function POST(req: Request) {
     const group = await prisma.group.findUnique({ where: { id: groupId } })
     if (!group) return NextResponse.json({ error: "Không tìm thấy nhóm" }, { status: 404 })
 
-    // chỉ owner được xóa
     if (group.ownerId !== me.id) {
       return NextResponse.json({ error: "Bạn không có quyền xóa thành viên" }, { status: 403 })
     }
 
-    // không cho xóa chính chủ nhóm qua API này
     if (memberId === me.id) {
       return NextResponse.json({ error: "Owner không thể tự xóa ở đây" }, { status: 400 })
     }

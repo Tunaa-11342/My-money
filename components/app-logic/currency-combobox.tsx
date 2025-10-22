@@ -46,7 +46,7 @@ export function CurrencyComboBox({ userId }: CurrencyComboBoxProps) {
   const mutation = useMutation({
     mutationFn: (currencyValue: string) => updateUserSetting(userId, currencyValue),
     onSuccess: (data: UserSettings) => {
-      toast.success(`Currency updated successuflly 🎉`)
+      toast.success(`Tiền tệ đã được cập nhật thành công 🎉`)
       setSelectedOption(Currencies.find((c) => c.value === data.currency) || null)
     },
     onError: (e) => {
@@ -58,7 +58,7 @@ export function CurrencyComboBox({ userId }: CurrencyComboBoxProps) {
   const selectOption = React.useCallback(
     (currency: Currency | null) => {
       if (!currency) {
-        toast.error('Please select a currency')
+        toast.error('Mời chọn loại tiền tệ')
         return
       }
       mutation.mutate(currency.value)

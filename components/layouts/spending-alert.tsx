@@ -14,14 +14,13 @@ export function SpendingAlert({ userSettings }: SpendingAlertProps) {
   const spendingQuery = useQuery({
     queryKey: ['currentMonthSpending', userSettings.userId],
     queryFn: () => getCurrentMonthSpending(userSettings.userId),
-    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
+    refetchInterval: 5 * 60 * 1000, 
   })
 
   const currentSpending = spendingQuery.data || 0
   const monthlyBudget = userSettings.monthlyBudget || 0
   const percentage = monthlyBudget > 0 ? (currentSpending / monthlyBudget) * 100 : 0
 
-  // 🧠 Gửi thông báo khi sắp vượt (>=90%) hoặc vượt ngân sách
   useEffect(() => {
     if (!monthlyBudget) return
     if (percentage < 90) return

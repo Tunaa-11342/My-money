@@ -11,7 +11,7 @@ export async function syncCurrentUser() {
     await prisma.user.create({
       data: {
         id: user.id,
-        email: user.emailAddresses[0]?.emailAddress || null,
+        email: user.emailAddresses[0]?.emailAddress || "",
         name: user.fullName || "Người dùng",
         imageUrl: user.imageUrl || "",
       },

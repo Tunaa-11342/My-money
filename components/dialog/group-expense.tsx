@@ -59,7 +59,6 @@ export function AddExpenseDialog({ groupId }: AddExpenseDialogProps) {
     note: '',
   })
 
-  // 🔹 Lấy danh sách thành viên của nhóm để chọn người chi
   useEffect(() => {
     const fetchMembers = async () => {
       const res = await fetch(`/api/groups/${groupId}`)

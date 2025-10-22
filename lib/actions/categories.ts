@@ -13,7 +13,7 @@ export async function getCategoriesByType(userId: string, type: TransactionType)
   return db.category.findMany({
     where: {
       userId: userId,
-      ...(type && { type }), // include type in the filters if it's defined
+      ...(type && { type }),
     },
     orderBy: {
       name: 'asc',

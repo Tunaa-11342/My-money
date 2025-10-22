@@ -4,8 +4,8 @@ import React from 'react'
 function Logo() {
   return (
     <a href='/' className='flex items-center gap-2'>
-      <PiggyBank className='stroke h-11 w-11 stroke-amber-500 stroke-[1.5]' />
-      <p className='bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-3xl font-bold leading-tight tracking-tighter text-transparent'>
+      <PiggyBank className='h-14 w-14 text-indigo-600 dark:text-indigo-400' />
+      <p className='animate-fade-up bg-gradient-to-r from-indigo-600 via-purple-500 to-pink-500 bg-clip-text text-transparent text-3xl font-bold leading-tight tracking-tighter'>
         Trình theo dõi ngân sách
       </p>
     </a>
@@ -15,7 +15,7 @@ function Logo() {
 export function LogoMobile() {
   return (
     <a href='/' className='flex items-center gap-2'>
-      <p className='bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-3xl font-bold leading-tight tracking-tighter text-transparent'>
+      <p className='animate-fade-up bg-gradient-to-r from-indigo-600 via-purple-500 to-pink-500 bg-clip-text text-transparent text-3xl font-bold leading-tight tracking-tighter'>
         Trình theo dõi ngân sách
       </p>
     </a>

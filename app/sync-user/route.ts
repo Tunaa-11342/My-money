@@ -11,7 +11,6 @@ export async function POST() {
     });
 
     if (!existing) {
-      // Tạo record UserSettings mặc định
       await db.userSettings.create({
         data: {
           userId: user.id,
@@ -19,8 +18,6 @@ export async function POST() {
           monthlyBudget: 0,
         },
       });
-
-      // Danh mục mặc định
       const defaultCategories = [
         { name: "Ăn uống", type: "expense", icon: "🍚" },
         { name: "Tiền điện", type: "expense", icon: "💡" },

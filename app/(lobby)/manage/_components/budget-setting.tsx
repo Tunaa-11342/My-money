@@ -20,14 +20,13 @@ export function BudgetSetting({ userId, currentBudget, currency }: BudgetSetting
   const [isLoading, setIsLoading] = useState(false)
   const queryClient = useQueryClient()
 
-  // 🧩 Gửi thông báo nếu ngân sách hiện tại sắp vượt
   useEffect(() => {
     const checkAndNotify = async () => {
       const budgetValue = parseFloat(budget)
       if (!budgetValue || isNaN(budgetValue)) return
 
       const percentage = (currentBudget / budgetValue) * 100
-      if (percentage < 90) return // chỉ báo khi đạt 90% trở lên
+      if (percentage < 90) return
 
       const message =
         percentage >= 100

@@ -22,7 +22,6 @@ export async function createTransaction(userId: string, form: CreateTransactionS
   }
 
   await db.$transaction([
-    // Ghi giao dịch mới
     db.transaction.create({
       data: {
         userId,
@@ -35,7 +34,6 @@ export async function createTransaction(userId: string, form: CreateTransactionS
       },
     }),
 
-    // Cập nhật bảng tháng
     db.monthHistory.upsert({
       where: {
         day_month_year_userId: {
@@ -59,7 +57,6 @@ export async function createTransaction(userId: string, form: CreateTransactionS
       },
     }),
 
-    // Cập nhật bảng năm
     db.yearHistory.upsert({
       where: {
         month_year_userId: {
@@ -110,7 +107,6 @@ export async function getTransactionsHistory(from: Date, to: Date) {
     where: { userId: user.id },
   })
 
-  // Nếu chưa có -> tạo mặc định
   if (!userSettings) {
     userSettings = await db.userSettings.create({
       data: {
@@ -134,7 +130,6 @@ export async function getTransactionsHistory(from: Date, to: Date) {
     })
   }
 
-  // Định dạng hiển thị theo tiền tệ người dùng
   const formatter = GetFormatterForCurrency(userSettings.currency)
 
   const transactions = await db.transaction.findMany({

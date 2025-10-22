@@ -7,10 +7,10 @@ export const authSchema = z.object({
   password: z
     .string()
     .min(8, {
-      message: 'Password must be at least 8 characters long',
+      message: 'Mật khẩu phải dài ít nhất 8 kí tự',
     })
     .max(100, {
-      message: 'Password must be at most 100 characters long',
+      message: 'mật khẩu không được quá 100 kí tự',
     }),
 })
 
@@ -18,7 +18,7 @@ export const verifyEmailSchema = z.object({
   code: z
     .string()
     .min(6, {
-      message: 'Verification code must be 6 characters long',
+      message: 'Mã xác minh phải dài 6 ký tự',
     })
     .max(6),
 })
@@ -34,7 +34,7 @@ export const resetPasswordSchema = z
     code: verifyEmailSchema.shape.code,
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: 'Passwords do not match',
+    message: 'Mật khẩu không khớp',
     path: ['confirmPassword'],
   })
 

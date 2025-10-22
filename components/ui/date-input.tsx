@@ -16,7 +16,7 @@ const DateInput: React.FC<DateInputProps> = ({ value, onChange }) => {
     const d = value ? new Date(value) : new Date()
     return {
       day: d.getDate(),
-      month: d.getMonth() + 1, // JavaScript months are 0-indexed
+      month: d.getMonth() + 1,
       year: d.getFullYear(),
     }
   })
@@ -43,7 +43,6 @@ const DateInput: React.FC<DateInputProps> = ({ value, onChange }) => {
       return false
     }
 
-    // Validate the day of the month
     const newDate = { ...date, [field]: value }
     const d = new Date(newDate.year, newDate.month - 1, newDate.day)
     return (
@@ -58,11 +57,9 @@ const DateInput: React.FC<DateInputProps> = ({ value, onChange }) => {
       const newValue = e.target.value ? Number(e.target.value) : ''
       const isValid = typeof newValue === 'number' && validateDate(field, newValue)
 
-      // If the new value is valid, update the date
       const newDate = { ...date, [field]: newValue }
       setDate(newDate)
 
-      // only call onChange when the entry is valid
       if (isValid) {
         onChange(new Date(newDate.year, newDate.month - 1, newDate.day))
       }
@@ -84,18 +81,15 @@ const DateInput: React.FC<DateInputProps> = ({ value, onChange }) => {
       if (!isValid) {
         setDate(initialDate.current)
       } else {
-        // If the new value is valid, update the initial value
         initialDate.current = { ...date, [field]: newValue }
       }
     }
 
   const handleKeyDown = (field: keyof DateParts) => (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Allow command (or control) combinations
     if (e.metaKey || e.ctrlKey) {
       return
     }
 
-    // Prevent non-numeric characters, excluding allowed keys
     if (
       !/^[0-9]$/.test(e.key) &&
       ![

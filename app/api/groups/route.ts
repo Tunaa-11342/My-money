@@ -24,37 +24,7 @@ export async function POST(req: Request) {
       );
     }
 
-<<<<<<< HEAD
-    // 🧩 Đồng bộ user Clerk -> Prisma (tránh lỗi khóa ngoại)
     const clerkEmail = user.emailAddresses[0]?.emailAddress;
-
-    const existingUser = await prisma.user.findUnique({
-      where: { email: clerkEmail },
-    });
-
-    if (!existingUser) {
-      await prisma.user.create({
-        data: {
-          id: user.id,
-          name: user.fullName,
-          email: clerkEmail,
-          imageUrl: user.imageUrl,
-          password: "",
-        },
-      });
-    } else {
-      await prisma.user.update({
-        where: { email: clerkEmail },
-        data: {
-          name: user.fullName,
-          imageUrl: user.imageUrl,
-        },
-      });
-    }
-=======
-// Đồng bộ user Clerk -> Prisma
-    const clerkEmail = user.emailAddresses[0]?.emailAddress;
->>>>>>> 242a3a1 (Fix bugs: JoinGroup day 2)
 
     const existingUser = await prisma.user.findUnique({
       where: { email: clerkEmail },
@@ -78,7 +48,7 @@ export async function POST(req: Request) {
         },
       });
     }
-    // 🧩 Tạo nhóm mới, có inviteCode ngắn
+
     const group = await prisma.group.create({
       data: {
         name,
@@ -111,7 +81,6 @@ export async function POST(req: Request) {
   }
 }
 
-// GET giữ nguyên như cũ
 export async function GET() {
   try {
     const user = await currentUser();

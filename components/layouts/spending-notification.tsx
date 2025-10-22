@@ -21,7 +21,6 @@ export function SpendingNotification({
 }: SpendingNotificationProps) {
   const [isDismissed, setIsDismissed] = useState(false)
   
-  // Don't show notification if budget is 0 or not set
   if (monthlyBudget <= 0 || isDismissed) {
     return null
   }
@@ -29,7 +28,6 @@ export function SpendingNotification({
   const isOverBudget = currentSpending > monthlyBudget
   const percentage = (currentSpending / monthlyBudget) * 100
 
-  // Only show notification if spending is over budget or close to it (90%+)
   if (percentage < 90) {
     return null
   }
