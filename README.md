@@ -12,18 +12,18 @@
 
 ## 🧭 Giới thiệu | Introduction
 
-**My-money** là một web app giúp người dùng theo dõi, phân tích và quản lý chi tiêu của **cá nhân hoặc nhóm**.  
-Ứng dụng được thiết kế với giao diện hiện đại, hỗ trợ tiếng Việt, và tối ưu cho cả **desktop** lẫn **mobile**.
+**My-money** là một ứng dụng web giúp người dùng theo dõi, phân tích và quản lý chi tiêu **cá nhân hoặc theo nhóm**.  
+Ứng dụng được thiết kế với giao diện hiện đại, tối ưu cho **desktop và mobile**, hỗ trợ **ngôn ngữ tiếng Việt**.
 
 **My-money** is a modern web application designed for **personal and group expense management**.  
-It features an elegant UI, full Vietnamese localization, and responsive design for both **desktop** and **mobile**.
+It features an elegant UI, full Vietnamese localization, and a responsive layout for both **desktop** and **mobile**.
 
 ---
 
 ## ✨ Tính năng nổi bật | Key Features
 
 ### 👤 Cá nhân
-- Thêm, sửa, xóa **giao dịch thu/chi**
+- Quản lý **giao dịch thu và chi**
 - Phân loại chi tiêu theo **danh mục, mô tả, ngày, loại**
 - Thiết lập và theo dõi **ngân sách hàng tháng**
 - Hiển thị **thông báo vượt hạn mức chi tiêu**
@@ -31,45 +31,50 @@ It features an elegant UI, full Vietnamese localization, and responsive design f
 ### 👥 Nhóm
 - Tạo **nhóm chi tiêu** và mời thành viên qua **mã mời hoặc QR code**
 - Phân quyền **chủ nhóm / thành viên**
-- Ghi nhận chi tiêu chung, **tự động chia sẻ và tổng hợp**
-- Giao diện trực quan cho từng nhóm và thống kê riêng biệt
+- Ghi nhận chi tiêu chung và **tự động tổng hợp chia sẻ**
+- Giao diện thống kê chi tiết cho từng nhóm
 
 ### 💡 Khác
-- Đăng nhập an toàn với **Clerk Authentication**
-- Dữ liệu được quản lý qua **Prisma + PostgreSQL (NeonDB)**
-- Giao diện được xây dựng bằng **Next.js 15 App Router** + **ShadCN UI**
+- **Đăng nhập an toàn** với Clerk Authentication  
+- Dữ liệu được quản lý qua **Prisma + PostgreSQL (NeonDB)**  
+- Giao diện xây dựng bằng **Next.js 15 App Router + ShadCN UI**  
 - Hỗ trợ định dạng tiền tệ linh hoạt (VNĐ, USD, EUR, ...)
 
 ---
 
 ## 🧩 Công nghệ sử dụng | Tech Stack
 
-| Công nghệ | Mục đích | Version |
-|------------|-----------|---------|
+| Công nghệ | Mục đích | Phiên bản |
+|------------|-----------|-----------|
 | **Next.js 15** | Framework React chính | Latest |
 | **TypeScript** | Kiểm soát kiểu tĩnh | 5.x |
-| **Prisma ORM** | Quản lý dữ liệu PostgreSQL | 5.x |
-| **Neon Database** | Cơ sở dữ liệu Postgres Cloud | — |
+| **Prisma ORM** | Quản lý dữ liệu | 5.x |
+| **Neon Database** | PostgreSQL Cloud Database | — |
 | **TailwindCSS + ShadCN UI** | Giao diện người dùng | 3.x |
 | **Clerk** | Xác thực người dùng | 5.x |
-| **React Hook Form + Zod** | Kiểm tra và quản lý form | 7.x / 3.x |
+| **React Hook Form + Zod** | Xử lý form và validation | 7.x / 3.x |
 
 ---
 
 ## 📁 Cấu trúc thư mục | Project Structure
+
 My-money/
-├── app/                      # App Router của Next.js
-│   ├── (lobby)/dashboard/    # Trang dashboard chính
-│   ├── api/                  # API routes (Next.js server actions)
-│   ├── wizard/               # Thiết lập ban đầu cho người dùng mới
-│   └── groups/               # Quản lý nhóm chi tiêu
+├── app/ # App Router của Next.js
+│ ├── (lobby)/dashboard/ # Trang dashboard chính
+│ ├── api/ # API routes (server actions)
+│ ├── wizard/ # Thiết lập cho người dùng mới
+│ └── groups/ # Trang quản lý nhóm
 │
-├── components/               # Các component UI tái sử dụng
-├── lib/                      # Prisma, Clerk, và các hàm tiện ích
-├── prisma/                   # Schema và migrations
-├── public/                   # Ảnh và icon
-├── scripts/                  # Seed và lệnh khởi tạo dữ liệu
+├── components/ # Component tái sử dụng
+├── lib/ # Prisma, Clerk và các tiện ích
+├── prisma/ # Schema và migrations
+├── public/ # Ảnh và icon tĩnh
+├── scripts/ # Seed dữ liệu mặc định
 └── package.json
+
+yaml
+Copy code
+
 ---
 
 ## ⚙️ Cài đặt & Chạy | Installation & Run
@@ -78,43 +83,60 @@ My-money/
 ```bash
 git clone https://github.com/Tunaa-11342/My-money.git
 cd My-money
+2️⃣ Cài đặt dependencies
+bash
+Copy code
 npm install
+3️⃣ Cấu hình môi trường
+Tạo file .env ở thư mục gốc với nội dung mẫu:
+
+env
+Copy code
 DATABASE_URL="postgresql://..."
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="..."
 CLERK_SECRET_KEY="..."
+4️⃣ Chạy Prisma & seed dữ liệu
+bash
+Copy code
 npx prisma migrate deploy
 npx prisma db seed
+5️⃣ Khởi động server
+bash
+Copy code
 npm run dev
-Ứng dụng sẽ chạy tại:
+Ứng dụng chạy tại:
 👉 http://localhost:3000
 
-⸻
-
 🚀 Triển khai | Deployment
-
-Ứng dụng có thể triển khai dễ dàng lên Vercel
-Link chạy thử (demo):
+Dự án có thể triển khai dễ dàng lên Vercel.
+Link demo (điền sau khi deploy):
 🔗 My-money on Vercel
 
-⸻
-
 📊 Demo Preview
+(Bạn có thể thêm ảnh minh họa UI vào đây nếu muốn)
 
-(Bạn có thể chèn ảnh minh họa UI hoặc animation tại đây)
 Ví dụ:
 
-📜 Giấy phép | License
+less
+Copy code
+![Dashboard Preview](https://github.com/Tunaa-11342/My-money/assets/dashboard-preview.png)
+👥 Nhóm phát triển | Development Team
+Họ tên	Vai trò	Liên hệ
+Tuna	Fullstack Developer / Project Owner	GitHub @Tunaa-11342
 
+📜 Giấy phép | License
 Phát hành dưới giấy phép MIT License.
 Bạn được phép sao chép, chỉnh sửa và phân phối lại phần mềm này cho mục đích học tập và phi thương mại.
 
 Released under the MIT License — free for learning and non-commercial use.
 
-⸻
-
 ❤️ Cảm ơn | Acknowledgements
-	•	Next.js
-	•	Clerk Authentication
-	•	Prisma ORM
-	•	Neon Postgres
-	•	ShadCN UI
+Next.js
+
+Clerk Authentication
+
+Prisma ORM
+
+Neon Postgres
+
+ShadCN UI
