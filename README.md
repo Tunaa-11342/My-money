@@ -83,11 +83,12 @@ Copy code
 ```bash
 git clone https://github.com/Tunaa-11342/My-money.git
 cd My-money
-2️⃣ Cài đặt dependencies
+
+### 2️⃣ Cài đặt dependencies
 bash
 Copy code
 npm install
-3️⃣ Cấu hình môi trường
+### 3️⃣ Cấu hình môi trường
 Tạo file .env ở thư mục gốc với nội dung mẫu:
 
 env
@@ -95,12 +96,12 @@ Copy code
 DATABASE_URL="postgresql://..."
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="..."
 CLERK_SECRET_KEY="..."
-4️⃣ Chạy Prisma & seed dữ liệu
+### 4️⃣ Chạy Prisma & seed dữ liệu
 bash
 Copy code
 npx prisma migrate deploy
 npx prisma db seed
-5️⃣ Khởi động server
+### 5️⃣ Khởi động server
 bash
 Copy code
 npm run dev
