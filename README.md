@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# 💰 My-money — Ứng dụng Quản lý Chi tiêu Cá nhân & Nhóm  
+*A modern web app for managing personal and group expenses.*
 
-## Getting Started
+[![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat&logo=nextdotjs)](https://nextjs.org/)
+[![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?style=flat&logo=prisma)](https://www.prisma.io/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat&logo=typescript)](https://www.typescriptlang.org/)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3-06B6D4?style=flat&logo=tailwindcss)](https://tailwindcss.com/)
+[![Clerk](https://img.shields.io/badge/Auth-Clerk-orange?style=flat&logo=clerk)](https://clerk.dev/)
+[![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🧭 Giới thiệu | Introduction
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**My-money** là một web app giúp người dùng theo dõi, phân tích và quản lý chi tiêu của **cá nhân hoặc nhóm**.  
+Ứng dụng được thiết kế với giao diện hiện đại, hỗ trợ tiếng Việt, và tối ưu cho cả **desktop** lẫn **mobile**.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**My-money** is a modern web application designed for **personal and group expense management**.  
+It features an elegant UI, full Vietnamese localization, and responsive design for both **desktop** and **mobile**.
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+---
 
-## Learn More
+## ✨ Tính năng nổi bật | Key Features
 
-To learn more about Next.js, take a look at the following resources:
+### 👤 Cá nhân
+- Thêm, sửa, xóa **giao dịch thu/chi**
+- Phân loại chi tiêu theo **danh mục, mô tả, ngày, loại**
+- Thiết lập và theo dõi **ngân sách hàng tháng**
+- Hiển thị **thông báo vượt hạn mức chi tiêu**
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 👥 Nhóm
+- Tạo **nhóm chi tiêu** và mời thành viên qua **mã mời hoặc QR code**
+- Phân quyền **chủ nhóm / thành viên**
+- Ghi nhận chi tiêu chung, **tự động chia sẻ và tổng hợp**
+- Giao diện trực quan cho từng nhóm và thống kê riêng biệt
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+### 💡 Khác
+- Đăng nhập an toàn với **Clerk Authentication**
+- Dữ liệu được quản lý qua **Prisma + PostgreSQL (NeonDB)**
+- Giao diện được xây dựng bằng **Next.js 15 App Router** + **ShadCN UI**
+- Hỗ trợ định dạng tiền tệ linh hoạt (VNĐ, USD, EUR, ...)
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🧩 Công nghệ sử dụng | Tech Stack
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+| Công nghệ | Mục đích | Version |
+|------------|-----------|---------|
+| **Next.js 15** | Framework React chính | Latest |
+| **TypeScript** | Kiểm soát kiểu tĩnh | 5.x |
+| **Prisma ORM** | Quản lý dữ liệu PostgreSQL | 5.x |
+| **Neon Database** | Cơ sở dữ liệu Postgres Cloud | — |
+| **TailwindCSS + ShadCN UI** | Giao diện người dùng | 3.x |
+| **Clerk** | Xác thực người dùng | 5.x |
+| **React Hook Form + Zod** | Kiểm tra và quản lý form | 7.x / 3.x |
+
+---
+
+## 📁 Cấu trúc thư mục | Project Structure
