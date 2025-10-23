@@ -57,24 +57,37 @@ It features an elegant UI, full Vietnamese localization, and a responsive layout
 ---
 
 ## 📁 Cấu trúc thư mục | Project Structure
-
+```
 My-money/
 ├── app/ # App Router của Next.js
-│ ├── (lobby)/dashboard/ # Trang dashboard chính
+│ ├── (lobby)
+| ├───────├── /dashboard/
+|         ├── /group/
+|         ├── /manage/
+|         ├── /transactions/
+| ├── (auth) #Đăng nhập, đăng kí, quên mật khẩu
 │ ├── api/ # API routes (server actions)
 │ ├── wizard/ # Thiết lập cho người dùng mới
-│ └── groups/ # Trang quản lý nhóm
+│ ├── sync-user 
 │
-├── components/ # Component tái sử dụng
+├── components/
+│ ├── app-logic
+| ├── app-ui
+| ├── datatable
+| ├── dialog
+| ├── group
+| ├── layouts
+| ├── skeletons
+| ├── ui    
 ├── lib/ # Prisma, Clerk và các tiện ích
 ├── prisma/ # Schema và migrations
+├── enums/ # Hằng số, giá trị cố định
 ├── public/ # Ảnh và icon tĩnh
 ├── scripts/ # Seed dữ liệu mặc định
+├── sytles/ # TailwindCSS
+├── types/ # Thành lập các giá trị
 └── package.json
-
-yaml
-Copy code
-
+```
 ---
 
 ## ⚙️ Cài đặt & Chạy | Installation & Run
@@ -83,55 +96,53 @@ Copy code
 ```bash
 git clone https://github.com/Tunaa-11342/My-money.git
 cd My-money
-
+```
 ### 2️⃣ Cài đặt dependencies
-bash
-Copy code
+```bash
 npm install
+```
 ### 3️⃣ Cấu hình môi trường
 Tạo file .env ở thư mục gốc với nội dung mẫu:
-
-env
-Copy code
+```bash
 DATABASE_URL="postgresql://..."
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="..."
 CLERK_SECRET_KEY="..."
+```
 ### 4️⃣ Chạy Prisma & seed dữ liệu
-bash
-Copy code
+```bash
 npx prisma migrate deploy
 npx prisma db seed
+```
 ### 5️⃣ Khởi động server
-bash
-Copy code
+```bash
 npm run dev
+```
 Ứng dụng chạy tại:
 👉 http://localhost:3000
 
-🚀 Triển khai | Deployment
+### 🚀 Triển khai | Deployment
+
 Dự án có thể triển khai dễ dàng lên Vercel.
-Link demo (điền sau khi deploy):
-🔗 My-money on Vercel
+Link demo: https://my-money-blush.vercel.app/
+###
+### 📊 Demo Preview
+![Dashboard Preview](https://github.com/Tunaa-11342/My-money/blob/4dc558c5f090b976e4226bdeac245bc3bb33ffb8/public/images/A.jpg)
+###
+### 👥 Nhóm phát triển | Development Team
+|Tác giả | Vai trò |Liên hệ |
+|------------|-----------|-----------|
+|Tunaa  | Fullstack Developer |GitHub @Tunaa-11342|
 
-📊 Demo Preview
-(Bạn có thể thêm ảnh minh họa UI vào đây nếu muốn)
+---
 
-Ví dụ:
-
-less
-Copy code
-![Dashboard Preview](https://github.com/Tunaa-11342/My-money/assets/dashboard-preview.png)
-👥 Nhóm phát triển | Development Team
-Họ tên	Vai trò	Liên hệ
-Tuna	Fullstack Developer / Project Owner	GitHub @Tunaa-11342
-
-📜 Giấy phép | License
+### 📜 Giấy phép | License
 Phát hành dưới giấy phép MIT License.
 Bạn được phép sao chép, chỉnh sửa và phân phối lại phần mềm này cho mục đích học tập và phi thương mại.
 
 Released under the MIT License — free for learning and non-commercial use.
 
-❤️ Cảm ơn | Acknowledgements
+###
+### ❤️ Cảm ơn | Acknowledgements
 Next.js
 
 Clerk Authentication
