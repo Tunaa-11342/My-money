@@ -1,29 +1,35 @@
-'use server'
+"use server";
 
-import { TransactionType } from '@/types'
-import { db } from '../db'
+import { TransactionType } from "@/types";
+import { db } from "../db";
 import {
   CreateCategorySchema,
   CreateCategorySchemaType,
   DeleteCategorySchema,
   DeleteCategorySchemaType,
-} from '../schemas/categories'
+} from "../schemas/categories";
 
-export async function getCategoriesByType(userId: string, type: TransactionType) {
-  return db.category.findMany({
+export async function getCategoriesByType(
+  userId: string,
+  type: TransactionType
+) {
+  return await db.category.findMany({
     where: {
-      userId: userId,
-      ...(type && { type }),
+      type,
+      OR: [
+        { userId: userId }, 
+        { userId: null }, 
+      ],
     },
     orderBy: {
-      name: 'asc',
+      name: "asc",
     },
-  })
+  });
 }
 
 export async function getCategoriesStats(userId: string, from: Date, to: Date) {
   return await db.transaction.groupBy({
-    by: ['type', 'category', 'categoryIcon'],
+    by: ["type", "category", "categoryIcon"],
     where: {
       userId,
       date: {
@@ -36,21 +42,26 @@ export async function getCategoriesStats(userId: string, from: Date, to: Date) {
     },
     orderBy: {
       _sum: {
-        amount: 'desc',
+        amount: "desc",
       },
     },
-  })
+  });
 }
 
-export type GetCategoriesStatsResponseType = Awaited<ReturnType<typeof getCategoriesStats>>
+export type GetCategoriesStatsResponseType = Awaited<
+  ReturnType<typeof getCategoriesStats>
+>;
 
-export async function createCategory(userId: string, form: CreateCategorySchemaType) {
-  const parsedBody = CreateCategorySchema.safeParse(form)
+export async function createCategory(
+  userId: string,
+  form: CreateCategorySchemaType
+) {
+  const parsedBody = CreateCategorySchema.safeParse(form);
   if (!parsedBody.success) {
-    throw new Error('bad request')
+    throw new Error("bad request");
   }
 
-  const { name, icon, type } = parsedBody.data
+  const { name, icon, type } = parsedBody.data;
   return await db.category.create({
     data: {
       userId: userId,
@@ -58,13 +69,16 @@ export async function createCategory(userId: string, form: CreateCategorySchemaT
       icon,
       type,
     },
-  })
+  });
 }
 
-export async function deleteCategory(userId: string, form: DeleteCategorySchemaType) {
-  const parsedBody = DeleteCategorySchema.safeParse(form)
+export async function deleteCategory(
+  userId: string,
+  form: DeleteCategorySchemaType
+) {
+  const parsedBody = DeleteCategorySchema.safeParse(form);
   if (!parsedBody.success) {
-    throw new Error('bad request')
+    throw new Error("bad request");
   }
 
   return await db.category.delete({
@@ -75,5 +89,5 @@ export async function deleteCategory(userId: string, form: DeleteCategorySchemaT
         type: parsedBody.data.type,
       },
     },
-  })
+  });
 }

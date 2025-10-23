@@ -188,13 +188,18 @@ function CreateCategoryDialog({
                           )}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-full">
+                      <PopoverContent
+                        className="w-full p-0"
+                        sideOffset={8} 
+                        onWheel={(e) => e.stopPropagation()} 
+                      >
                         <Picker
                           data={data}
                           theme={theme.resolvedTheme}
                           onEmojiSelect={(emoji: { native: string }) => {
                             field.onChange(emoji.native);
                           }}
+                          style={{ maxHeight: 300 }} 
                         />
                       </PopoverContent>
                     </Popover>

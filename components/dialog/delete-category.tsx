@@ -41,7 +41,7 @@ function DeleteCategoryDialog({ category, trigger, userId }: Props) {
       })
     },
     onError: () => {
-      toast.error('Something went wrong', {
+      toast.error('Không xóa được.', {
         id: categoryIdentifier,
       })
     },

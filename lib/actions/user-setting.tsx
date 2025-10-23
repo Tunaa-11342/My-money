@@ -71,20 +71,30 @@ export async function updateUserBudget(userId: string, monthlyBudget: number) {
 
 export async function getCurrentMonthSpending(userId: string) {
   const now = new Date()
-  const currentMonth = now.getMonth()
-  const currentYear = now.getFullYear()
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
 
-  const result = await db.monthHistory.groupBy({
-    by: ['userId'],
+  const transactions = await db.transaction.findMany({
     where: {
       userId,
-      month: currentMonth,
-      year: currentYear,
+      type: 'expense', 
+      date: {
+        gte: startOfMonth,
+        lt: endOfMonth,
+      },
     },
-    _sum: {
-      expense: true,
-    },
+    select: { amount: true },
   })
 
-  return result[0]?._sum.expense || 0
+  const totalSpending = transactions.reduce((sum, t) => sum + t.amount, 0)
+
+  const settings = await db.userSettings.findUnique({
+    where: { userId },
+  })
+
+  return {
+    currentSpending: totalSpending,
+    monthlyBudget: settings?.monthlyBudget ?? 0,
+    currency: settings?.currency ?? 'VND',
+  }
 }

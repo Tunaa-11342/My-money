@@ -54,7 +54,7 @@ function CreateTransactionDialog({ trigger, type, userId }: Props) {
   const [open, setOpen] = useState(false)
   const handleCategoryChange = useCallback(
     (value: string) => {
-      form.setValue('category', value)
+      form.setValue('categoryId', value)
     },
     [form]
   )
@@ -73,7 +73,7 @@ function CreateTransactionDialog({ trigger, type, userId }: Props) {
         description: '',
         amount: 0,
         date: new Date(),
-        category: undefined,
+        categoryId: undefined,
       })
 
       queryClient.invalidateQueries({
@@ -140,7 +140,7 @@ function CreateTransactionDialog({ trigger, type, userId }: Props) {
             <div className='flex items-center justify-between gap-2'>
               <FormField
                 control={form.control}
-                name='category'
+                name='categoryId'
                 render={({ field }) => (
                   <FormItem className='flex flex-col'>
                     <FormLabel>Danh mục</FormLabel>

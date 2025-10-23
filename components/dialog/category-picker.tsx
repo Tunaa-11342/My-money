@@ -12,107 +12,115 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 import { TransactionType } from '@/types'
-import { Category } from '@prisma/client'
-import { useQuery } from '@tanstack/react-query'
-import { Check, ChevronsUpDown } from 'lucide-react'
-import React, { useCallback, useEffect, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { Check, ChevronsUpDown, PlusSquare } from 'lucide-react'
+import React, { useMemo, useState } from 'react'
 import CreateCategoryDialog from './create-category'
 import { getCategoriesByType } from '@/lib/actions/categories'
 
 interface Props {
-  type: TransactionType
-  onChange: (value: string) => void
   userId: string
+  type?: TransactionType  
+  onChange: (value: string) => void
 }
 
-function CategoryPicker({ type, onChange, userId }: Props) {
-  const [open, setOpen] = React.useState(false)
-  const [value, setValue] = React.useState('')
+export default function CategoryPicker({ userId, type, onChange }: Props) {
+  const [open, setOpen] = useState(false)
+  const [selected, setSelected] = useState<string>('')
 
-  useEffect(() => {
-    if (!value) return
-    onChange(value)
-  }, [onChange, value])
+  const queryClient = useQueryClient()
 
-  const categoriesQuery = useQuery({
-    queryKey: ['categories', type, userId],
-    queryFn: () => getCategoriesByType(userId, type),
+  // ✅ Lấy danh mục từ DB (đã bao gồm mặc định seed)
+  const { data: userCategories = [] } = useQuery({
+    queryKey: ['categories', userId, type],
+    queryFn: () => getCategoriesByType(userId, type || 'expense'),
   })
 
-  const selectedCategory = categoriesQuery.data?.find(
-    (category: Category) => category.name === value
-  )
-  const { refetch } = categoriesQuery
+  // ✅ Chuẩn hóa dữ liệu để hiển thị
+  const mergedCategories = useMemo(() => {
+    return userCategories.map((c: any) => ({
+      id: c.id,
+      name: c.name,
+      icon: c.icon || '📁',
+      type: c.type,
+    }))
+  }, [userCategories])
 
-  const successCallback = useCallback(
-    (category: Category) => {
-      setValue(category.name)
-      refetch() 
-      setOpen((prev) => !prev)
-    },
-    [setValue, setOpen, refetch]
-  )
+  const handleSelect = (value: string) => {
+    setSelected(value)
+    onChange(value)
+    setOpen(false)
+  }
+
+  const selectedCategory = mergedCategories.find((c) => c.id === selected)
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
-          variant={'outline'}
-          role='combobox'
+          variant="outline"
+          role="combobox"
           aria-expanded={open}
-          className='w-[200px] justify-between'
+          className="w-[240px] justify-between"
         >
-          {selectedCategory ? <CategoryRow category={selectedCategory} /> : 'Chọn danh mục'}
-          <ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
+          {selectedCategory ? (
+            <>
+              <span className="mr-1">{selectedCategory.icon}</span>
+              {selectedCategory.name}
+            </>
+          ) : (
+            'Chọn danh mục'
+          )}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className='w-[200px] p-0'>
-        <Command
-          onSubmit={(e) => {
-            e.preventDefault()
-          }}
-        >
-          <CommandInput placeholder='Tìm kiếm danh mục...' />
-          <CreateCategoryDialog userId={userId} type={type} successCallback={successCallback} />
-          <CommandEmpty>
-            <p>Không tìm thấy danh mục</p>
-            <p className='text-xs text-muted-foreground'>Mẹo: Tạo một danh mục mới</p>
-          </CommandEmpty>
-          <CommandGroup>
-            <CommandList>
-              {categoriesQuery.data &&
-                categoriesQuery.data.map((category: Category) => (
-                  <CommandItem
-                    key={category.name}
-                    onSelect={() => {
-                      setValue(category.name)
-                      setOpen((prev) => !prev)
-                    }}
-                  >
-                    <CategoryRow category={category} />
-                    <Check
-                      className={cn(
-                        'mr-2 w-4 h-4 opacity-0',
-                        value === category.name && 'opacity-100'
-                      )}
-                    />
-                  </CommandItem>
-                ))}
-            </CommandList>
-          </CommandGroup>
+
+      <PopoverContent className="w-[260px] p-0">
+        <Command>
+          <CommandInput placeholder="Tìm danh mục..." />
+          <CommandList>
+            <CommandEmpty>Không tìm thấy danh mục</CommandEmpty>
+
+            <CommandGroup heading="Danh mục có sẵn">
+              {mergedCategories.map((cat) => (
+                <CommandItem
+                  key={cat.id}
+                  value={cat.id}
+                  onSelect={() => handleSelect(cat.id)}
+                >
+                  <span className="mr-2">{cat.icon}</span>
+                  {cat.name}
+                  <Check
+                    className={cn(
+                      'ml-auto h-4 w-4',
+                      selected === cat.id ? 'opacity-100' : 'opacity-0'
+                    )}
+                  />
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
         </Command>
+
+        <div className="border-t px-3 py-2">
+          <CreateCategoryDialog
+            type={type || 'expense'}
+            userId={userId}
+            successCallback={() => {
+              queryClient.invalidateQueries({ queryKey: ['categories', userId, type] })
+            }}
+            trigger={
+              <Button
+                variant="ghost"
+                className="flex w-full justify-start text-muted-foreground hover:bg-accent"
+              >
+                <PlusSquare className="mr-2 h-4 w-4" />
+                Tạo danh mục mới
+              </Button>
+            }
+          />
+        </div>
       </PopoverContent>
     </Popover>
-  )
-}
-
-export default CategoryPicker
-
-function CategoryRow({ category }: { category: Category }) {
-  return (
-    <div className='flex items-center gap-2'>
-      <span role='img'>{category.icon}</span>
-      <span>{category.name}</span>
-    </div>
   )
 }

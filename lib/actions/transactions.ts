@@ -1,10 +1,13 @@
-'use server'
+"use server"
 
-import { db } from '../db'
-import { CreateTransactionSchema, CreateTransactionSchemaType } from '../schemas/transactions'
-import { GetFormatterForCurrency } from '../utils'
-import { currentUser } from '@clerk/nextjs/server'
-import { redirect } from 'next/navigation'
+import { db } from "../db"
+import {
+  CreateTransactionSchema,
+  CreateTransactionSchemaType,
+} from "../schemas/transactions"
+import { GetFormatterForCurrency } from "../utils"
+import { currentUser } from "@clerk/nextjs/server"
+import { redirect } from "next/navigation"
 
 export async function createTransaction(userId: string, form: CreateTransactionSchemaType) {
   const parsedBody = CreateTransactionSchema.safeParse(form)
@@ -12,13 +15,14 @@ export async function createTransaction(userId: string, form: CreateTransactionS
     throw new Error(parsedBody.error.message)
   }
 
-  const { amount, category, date, description, type } = parsedBody.data
+  const { amount, categoryId, date, description, type } = parsedBody.data
 
-  const categoryRow = await db.category.findFirst({
-    where: { userId, name: category },
+  const categoryRow = await db.category.findUnique({
+    where: { id: categoryId },
   })
+
   if (!categoryRow) {
-    throw new Error('category not found')
+    throw new Error("Danh mục không tồn tại")
   }
 
   await db.$transaction([
@@ -27,9 +31,9 @@ export async function createTransaction(userId: string, form: CreateTransactionS
         userId,
         amount,
         date,
-        description: description || '',
+        description: description || "",
         type,
-        category: categoryRow.name,
+        category: categoryRow.name, 
         categoryIcon: categoryRow.icon,
       },
     }),
@@ -48,12 +52,12 @@ export async function createTransaction(userId: string, form: CreateTransactionS
         day: date.getUTCDate(),
         month: date.getUTCMonth(),
         year: date.getUTCFullYear(),
-        expense: type === 'expense' ? amount : 0,
-        income: type === 'income' ? amount : 0,
+        expense: type === "expense" ? amount : 0,
+        income: type === "income" ? amount : 0,
       },
       update: {
-        expense: { increment: type === 'expense' ? amount : 0 },
-        income: { increment: type === 'income' ? amount : 0 },
+        expense: { increment: type === "expense" ? amount : 0 },
+        income: { increment: type === "income" ? amount : 0 },
       },
     }),
 
@@ -69,12 +73,12 @@ export async function createTransaction(userId: string, form: CreateTransactionS
         userId,
         month: date.getUTCMonth(),
         year: date.getUTCFullYear(),
-        expense: type === 'expense' ? amount : 0,
-        income: type === 'income' ? amount : 0,
+        expense: type === "expense" ? amount : 0,
+        income: type === "income" ? amount : 0,
       },
       update: {
-        expense: { increment: type === 'expense' ? amount : 0 },
-        income: { increment: type === 'income' ? amount : 0 },
+        expense: { increment: type === "expense" ? amount : 0 },
+        income: { increment: type === "income" ? amount : 0 },
       },
     }),
   ])
@@ -82,14 +86,14 @@ export async function createTransaction(userId: string, form: CreateTransactionS
 
 export async function getBalanceStats(userId: string, from: Date, to: Date) {
   const totals = await db.transaction.groupBy({
-    by: ['type'],
+    by: ["type"],
     where: { userId, date: { gte: from, lte: to } },
     _sum: { amount: true },
   })
 
   return {
-    expense: totals.find((t) => t.type === 'expense')?._sum.amount || 0,
-    income: totals.find((t) => t.type === 'income')?._sum.amount || 0,
+    expense: totals.find((t) => t.type === "expense")?._sum.amount || 0,
+    income: totals.find((t) => t.type === "income")?._sum.amount || 0,
   }
 }
 
@@ -100,7 +104,7 @@ export type GetTransactionHistoryResponseType = Awaited<
 export async function getTransactionsHistory(from: Date, to: Date) {
   const user = await currentUser()
   if (!user) {
-    redirect('/sign-in')
+    redirect("/sign-in")
   }
 
   let userSettings = await db.userSettings.findUnique({
@@ -111,18 +115,17 @@ export async function getTransactionsHistory(from: Date, to: Date) {
     userSettings = await db.userSettings.create({
       data: {
         userId: user.id,
-        currency: 'VND',
+        currency: "VND",
       },
     })
 
-    // Tạo sẵn các danh mục mặc định
     const defaultCategories = [
-      { name: 'Ăn uống', type: 'expense', icon: '🍚' },
-      { name: 'Tiền điện', type: 'expense', icon: '💡' },
-      { name: 'Tiền nước', type: 'expense', icon: '🚿' },
-      { name: 'Dầu gội', type: 'expense', icon: '🧴' },
-      { name: 'Tiền lương', type: 'income', icon: '💵' },
-      { name: 'Tiền thưởng', type: 'income', icon: '🎁' },
+      { name: "Ăn uống", type: "expense", icon: "🍚" },
+      { name: "Tiền điện", type: "expense", icon: "💡" },
+      { name: "Tiền nước", type: "expense", icon: "🚿" },
+      { name: "Dầu gội", type: "expense", icon: "🧴" },
+      { name: "Tiền lương", type: "income", icon: "💵" },
+      { name: "Tiền thưởng", type: "income", icon: "🎁" },
     ]
 
     await db.category.createMany({
@@ -137,7 +140,7 @@ export async function getTransactionsHistory(from: Date, to: Date) {
       userId: userSettings.userId,
       date: { gte: from, lte: to },
     },
-    orderBy: { date: 'desc' },
+    orderBy: { date: "desc" },
   })
 
   return transactions.map((transaction) => ({
@@ -149,14 +152,14 @@ export async function getTransactionsHistory(from: Date, to: Date) {
 export async function DeleteTransaction(id: string) {
   const user = await currentUser()
   if (!user) {
-    redirect('/sign-in')
+    redirect("/sign-in")
   }
 
   const transaction = await db.transaction.findUnique({
     where: { userId: user.id, id },
   })
   if (!transaction) {
-    throw new Error('bad request')
+    throw new Error("bad request")
   }
 
   await db.$transaction([
@@ -174,10 +177,10 @@ export async function DeleteTransaction(id: string) {
         },
       },
       data: {
-        ...(transaction.type === 'expense' && {
+        ...(transaction.type === "expense" && {
           expense: { decrement: transaction.amount },
         }),
-        ...(transaction.type === 'income' && {
+        ...(transaction.type === "income" && {
           income: { decrement: transaction.amount },
         }),
       },
@@ -192,10 +195,10 @@ export async function DeleteTransaction(id: string) {
         },
       },
       data: {
-        ...(transaction.type === 'expense' && {
+        ...(transaction.type === "expense" && {
           expense: { decrement: transaction.amount },
         }),
-        ...(transaction.type === 'income' && {
+        ...(transaction.type === "income" && {
           income: { decrement: transaction.amount },
         }),
       },

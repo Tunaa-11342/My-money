@@ -33,7 +33,7 @@ export function SiteHeader({ user, userSettings }: SiteHeaderProps) {
       {user && userSettings && (
         <div className='sticky top-16 z-40 w-full bg-background'>
           <div className='container py-2'>
-            <SpendingAlert userSettings={userSettings} />
+            <SpendingAlert />
           </div>
         </div>
       )}

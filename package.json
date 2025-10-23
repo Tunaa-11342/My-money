@@ -1,13 +1,13 @@
 {
   "name": "budget-tracker",
-  "version": "0.1.0",
+  "version": ".1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "npx prisma generate"
+    "postinstall": "npx prisma generate && tsx enums/seed-default-categories.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^5.0.2",
@@ -59,6 +59,7 @@
     "sonner": "^1.4.41",
     "tailwind-merge": "^2.3.0",
     "tailwindcss-animate": "^1.0.7",
+    "tsx": "^4.20.6",
     "vaul": "^0.9.0",
     "zod": "^3.25.76"
   },

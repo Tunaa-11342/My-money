@@ -332,8 +332,9 @@ function RowActions({ transaction }: { transaction: TransactionHistoryRow }) {
           <DropdownMenuSeparator />
           <DropdownMenuItem
             className="flex items-center gap-2"
-            onSelect={() => {
-              setShowDeleteDialog((prev) => !prev);
+            onClick={(e) => {
+              e.preventDefault(); 
+              setShowDeleteDialog(true);
             }}
           >
             <TrashIcon className="h-4 w-4 text-muted-foreground" />

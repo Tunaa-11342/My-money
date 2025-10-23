@@ -60,7 +60,6 @@ export function BudgetSetting({ userId, currentBudget, currency }: BudgetSetting
       await updateUserBudget(userId, budgetValue)
       toast.success('Đã cập nhật ngân sách hàng tháng')
 
-      // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ['userSettings'] })
       queryClient.invalidateQueries({ queryKey: ['currentMonthSpending'] })
     } catch (error) {

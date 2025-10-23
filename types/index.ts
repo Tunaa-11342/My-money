@@ -1,12 +1,12 @@
-// import { type SQL } from 'drizzle-orm'
-// import type Stripe from 'stripe'
-// import { type ClientUploadedFileData } from 'uploadthing/types'
-
 import type { Icons } from '@/components/app-ui/icons'
 
 export type TransactionType = 'income' | 'expense'
-export type Timeframe = 'month' | 'year'
-export type Period = { year: number; month: number }
+export type Timeframe = 'year' | 'month' | 'week'
+export type Period = {
+  year: number
+  month?: number
+  week?: number
+}
 
 export interface NavItem {
   title: string
