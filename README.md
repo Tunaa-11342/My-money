@@ -57,3 +57,64 @@ It features an elegant UI, full Vietnamese localization, and responsive design f
 ---
 
 ## 📁 Cấu trúc thư mục | Project Structure
+My-money/
+├── app/                      # App Router của Next.js
+│   ├── (lobby)/dashboard/    # Trang dashboard chính
+│   ├── api/                  # API routes (Next.js server actions)
+│   ├── wizard/               # Thiết lập ban đầu cho người dùng mới
+│   └── groups/               # Quản lý nhóm chi tiêu
+│
+├── components/               # Các component UI tái sử dụng
+├── lib/                      # Prisma, Clerk, và các hàm tiện ích
+├── prisma/                   # Schema và migrations
+├── public/                   # Ảnh và icon
+├── scripts/                  # Seed và lệnh khởi tạo dữ liệu
+└── package.json
+---
+
+## ⚙️ Cài đặt & Chạy | Installation & Run
+
+### 1️⃣ Clone repository
+```bash
+git clone https://github.com/Tunaa-11342/My-money.git
+cd My-money
+npm install
+DATABASE_URL="postgresql://..."
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="..."
+CLERK_SECRET_KEY="..."
+npx prisma migrate deploy
+npx prisma db seed
+npm run dev
+Ứng dụng sẽ chạy tại:
+👉 http://localhost:3000
+
+⸻
+
+🚀 Triển khai | Deployment
+
+Ứng dụng có thể triển khai dễ dàng lên Vercel
+Link chạy thử (demo):
+🔗 My-money on Vercel
+
+⸻
+
+📊 Demo Preview
+
+(Bạn có thể chèn ảnh minh họa UI hoặc animation tại đây)
+Ví dụ:
+
+📜 Giấy phép | License
+
+Phát hành dưới giấy phép MIT License.
+Bạn được phép sao chép, chỉnh sửa và phân phối lại phần mềm này cho mục đích học tập và phi thương mại.
+
+Released under the MIT License — free for learning and non-commercial use.
+
+⸻
+
+❤️ Cảm ơn | Acknowledgements
+	•	Next.js
+	•	Clerk Authentication
+	•	Prisma ORM
+	•	Neon Postgres
+	•	ShadCN UI
