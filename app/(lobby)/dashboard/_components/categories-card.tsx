@@ -28,7 +28,7 @@ export function CategoriesCard({
         {filteredData.length === 0 && (
           <div className='flex h-60 w-full flex-col items-center justify-center'>
             Không có dữ liệu cho khoảng thời gian đã chọn
-            <p className='text-sm text-muted-foreground'>
+            <p className='text-sm text-center leading-snug break-words max-w-[250px] mx-auto'>
               Hãy thử chọn một khoảng thời gian khác hoặc thử thêm mới{' '}
               {type === 'income' ? 'thu nhập' : 'chi tiêu'}
             </p>

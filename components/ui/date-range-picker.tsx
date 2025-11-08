@@ -40,13 +40,21 @@ export interface DateRangePickerProps {
   locale?: string;
   /** Option for showing compare feature */
   showCompare?: boolean;
+  className?: string;
 }
 
-const formatDate = (date: Date, locale: string = "vi-VN"): string => {
+const formatDateLong = (date: Date, locale: string = "vi-VN"): string => {
   return date.toLocaleDateString(locale, {
-    weekday: "long",
     day: "numeric",
     month: "long",
+    year: "numeric",
+  });
+};
+
+const formatDateShort = (date: Date, locale: string = "vi-VN"): string => {
+  return date.toLocaleDateString(locale, {
+    day: "2-digit",
+    month: "2-digit",
     year: "numeric",
   });
 };
@@ -91,6 +99,7 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
   initialCompareFrom,
   initialCompareTo,
   onUpdate,
+  className,
   align = "end",
   locale = "vi-VN",
   showCompare = true,
@@ -337,24 +346,39 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
       }}
     >
       <PopoverTrigger asChild>
-        <Button size={"lg"} variant="outline">
+        <Button
+          size={"lg"}
+          variant="outline"
+          className={cn("max-w-full sm:w-auto", className)}
+        >
           <div className="text-right">
             <div className="py-1">
-              <div>{`${formatDate(range.from, locale)}${
-                range.to != null ? " - " + formatDate(range.to, locale) : ""
-              }`}</div>
+              {isSmallScreen
+                ? `${formatDateShort(range.from, locale)}${
+                    range.to ? " - " + formatDateShort(range.to, locale) : ""
+                  }`
+                : `${formatDateLong(range.from, locale)}${
+                    range.to ? " - " + formatDateLong(range.to, locale) : ""
+                  }`}
             </div>
+
             {rangeCompare != null && (
               <div className="opacity-60 text-xs -mt-1">
-                <>
-                  vs. {formatDate(rangeCompare.from, locale)}
-                  {rangeCompare.to != null
-                    ? ` - ${formatDate(rangeCompare.to, locale)}`
-                    : ""}
-                </>
+                {isSmallScreen
+                  ? `vs. ${formatDateShort(rangeCompare.from, locale)}${
+                      rangeCompare.to
+                        ? " - " + formatDateShort(rangeCompare.to, locale)
+                        : ""
+                    }`
+                  : `vs. ${formatDateLong(rangeCompare.from, locale)}${
+                      rangeCompare.to
+                        ? " - " + formatDateLong(rangeCompare.to, locale)
+                        : ""
+                    }`}
               </div>
             )}
           </div>
+
           <div className="pl-1 opacity-60 -mr-2 scale-125">
             {isOpen ? (
               <ChevronUpIcon width={24} />
@@ -370,7 +394,7 @@ export const DateRangePicker: FC<DateRangePickerProps> & {
             <div className="flex flex-col">
               <div className="flex flex-col lg:flex-row gap-2 px-3 justify-end items-center lg:items-start pb-4 lg:pb-0">
                 {showCompare && (
-                  <div className="flex items-center space-x-2 pr-4 py-1">
+                  <div className={cn("flex items-center space-x-2 pr-4 py-1")}>
                     <Switch
                       defaultChecked={Boolean(rangeCompare)}
                       onCheckedChange={(checked: boolean) => {

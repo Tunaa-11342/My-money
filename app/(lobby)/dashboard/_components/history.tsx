@@ -211,11 +211,11 @@ function History({ userSettings }: { userSettings: UserSettings }) {
               </ResponsiveContainer>
             ) : (
               <Card className="flex h-[300px] flex-col items-center justify-center bg-transparent backdrop-blur-md border border-white/10">
-                <p className="text-lg font-medium">
+                <p className="text-sm text-center leading-snug break-words max-w-[250px] mx-auto">
                   Không có dữ liệu trong khoảng thời gian đã chọn
                 </p>
-                <p className="text-sm text-muted-foreground">
-                  Thử chọn một khoảng thời gian khác hoặc thêm giao dịch mới 💸
+                <p className="text-sm text-center leading-snug break-words max-w-[250px] mx-auto">
+                  Thử chọn một khoảng thời gian khác hoặc thêm giao dịch mới
                 </p>
               </Card>
             )}
