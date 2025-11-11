@@ -1,4 +1,4 @@
-# 💰 My-money — Ứng dụng Quản lý Chi tiêu Cá nhân & Nhóm  
+# My-money — Ứng dụng Quản lý Chi tiêu Cá nhân & Nhóm  
 *A modern web app for managing personal and group expenses.*
 
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat&logo=nextdotjs)](https://nextjs.org/)
@@ -10,7 +10,7 @@
 
 ---
 
-## 🧭 Giới thiệu | Introduction
+## Giới thiệu | Introduction
 
 **My-money** là một ứng dụng web giúp người dùng theo dõi, phân tích và quản lý chi tiêu **cá nhân hoặc theo nhóm**.  
 Ứng dụng được thiết kế với giao diện hiện đại, tối ưu cho **desktop và mobile**, hỗ trợ **ngôn ngữ tiếng Việt**.
@@ -20,7 +20,7 @@ It features an elegant UI, full Vietnamese localization, and a responsive layout
 
 ---
 
-## ✨ Tính năng nổi bật | Key Features
+## Tính năng nổi bật | Key Features
 
 ### 👤 Cá nhân
 - Quản lý **giao dịch thu và chi**
@@ -42,7 +42,7 @@ It features an elegant UI, full Vietnamese localization, and a responsive layout
 
 ---
 
-## 🧩 Công nghệ sử dụng | Tech Stack
+## Công nghệ sử dụng | Tech Stack
 
 | Công nghệ | Mục đích | Phiên bản |
 |------------|-----------|-----------|
@@ -56,7 +56,7 @@ It features an elegant UI, full Vietnamese localization, and a responsive layout
 
 ---
 
-## 📁 Cấu trúc thư mục | Project Structure
+## Cấu trúc thư mục | Project Structure
 ```
 My-money/
 ├── app/ # App Router của Next.js
@@ -120,12 +120,12 @@ npm run dev
 Ứng dụng chạy tại:
 👉 http://localhost:3000
 
-### 🚀 Triển khai | Deployment
+### Triển khai | Deployment
 
 Dự án có thể triển khai dễ dàng lên Vercel.
 Link demo: https://my-money-blush.vercel.app/
 ###
-### 📊 Demo Preview
+### Demo Preview
 ![Dashboard Preview](https://github.com/Tunaa-11342/My-money/blob/4dc558c5f090b976e4226bdeac245bc3bb33ffb8/public/images/A.jpg)
 ###
 ### 👥 Nhóm phát triển | Development Team
@@ -142,7 +142,7 @@ Bạn được phép sao chép, chỉnh sửa và phân phối lại phần mề
 Released under the MIT License — free for learning and non-commercial use.
 
 ###
-### ❤️ Cảm ơn | Acknowledgements
+### Cảm ơn | Acknowledgements
 Next.js
 
 Clerk Authentication
