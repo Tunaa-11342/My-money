@@ -1,0 +1,16 @@
+Git command
+
+Git clone
+
+Combo Push:
+git config --global --add safe.directory "E:/Đồ án 1/My-money"
+git status
+git add .
+git commit -m "Your commit message"
+git push origin main
+
+Combo Pull:
+git pull origin main
+git fetch
+
+Update = git pull origin main --rebase
