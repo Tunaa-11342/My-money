@@ -33,8 +33,40 @@ export async function POST(req: Request) {
 }
 
 export async function GET() {
+  const user = await currentUser()
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
   const notifications = await prisma.notification.findMany({
+    where: { userId: user.id },
     orderBy: { createdAt: "desc" },
   })
   return NextResponse.json(notifications)
+}
+
+export async function PATCH() {
+  const user = await currentUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  await prisma.notification.updateMany({
+    where: { userId: user.id, read: false },
+    data: { read: true },
+  })
+
+  return NextResponse.json({ success: true })
+}
+
+export async function DELETE(req: Request) {
+  const user = await currentUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { id } = await req.json()
+
+  await prisma.notification.deleteMany({
+    where: {
+      id,
+      userId: user.id,
+    },
+  })
+
+  return NextResponse.json({ success: true })
 }

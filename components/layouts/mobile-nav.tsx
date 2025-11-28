@@ -1,71 +1,73 @@
-'use client'
+"use client";
 
-import * as React from 'react'
-import Link from 'next/link'
-import { useSelectedLayoutSegment } from 'next/navigation'
-import type { MainNavItem } from '@/types'
+import * as React from "react";
+import Link from "next/link";
+import { useSelectedLayoutSegment } from "next/navigation";
+import type { MainNavItem } from "@/types";
 
-import { siteConfig } from '@/config/site'
-import { cn } from '@/lib/utils'
-import { useMediaQuery } from '@/hooks/use-media-query'
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion'
-import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import { Icons } from '@/components/app-ui/icons'
-import { PiggyBank } from 'lucide-react'
+import { siteConfig } from "@/config/site";
+import { cn } from "@/lib/utils";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Icons } from "@/components/app-ui/icons";
+import { Wallet } from "lucide-react";
 
 interface MobileNavProps {
-  items?: MainNavItem[]
+  items?: MainNavItem[];
 }
 
 export function MobileNav({ items }: MobileNavProps) {
-  const isDesktop = useMediaQuery('(min-width: 1024px)')
-  const segment = useSelectedLayoutSegment()
-  const [open, setOpen] = React.useState(false)
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
+  const segment = useSelectedLayoutSegment();
+  const [open, setOpen] = React.useState(false);
 
-  if (isDesktop) return null
+  if (isDesktop) return null;
 
-  const itemListWithItems = items?.filter((item) => item.items && item.items.length > 0)
-  const itemListWithoutItems = items?.filter((item) => !item.items || item.items.length === 0)
+  const itemListWithItems = items?.filter(
+    (item) => item.items && item.items.length > 0
+  );
+  const itemListWithoutItems = items?.filter(
+    (item) => !item.items || item.items.length === 0
+  );
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button
-          variant='ghost'
-          size='icon'
-          className='size-5 hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 lg:hidden'
+          variant="ghost"
+          size="icon"
+          className="w-9 h-9 text-foreground dark:text-white hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 lg:hidden"
         >
-          <Icons.menu aria-hidden='true' />
-          <span className='sr-only'>Chuyển đổi menu</span>
+          <Icons.menu className="size-6" aria-hidden="true" />
         </Button>
       </SheetTrigger>
-      <SheetContent side='left' className='pl-1 pr-0 pt-9'>
-        <div className='w-full px-7'>
-          <Link href='/' className='flex items-center' onClick={() => setOpen(false)}>
-            <PiggyBank
-              className='mr-2 size-8 stroke stroke-green-500 stroke-[1.2]'
-              aria-hidden='true'
+      <SheetContent side="left" className="pl-1 pr-0 pt-9">
+        <div className="w-full px-7">
+          <Link
+            href="/"
+            className="flex items-center"
+            onClick={() => setOpen(false)}
+          >
+            <Wallet
+              className="mr-2 size-8 stroke stroke-indigo-600 stroke-[1.2]"
+              aria-hidden="true"
             />
-            <span className='bg-gradient-to-r from-green-400 to-green-500 bg-clip-text text-xl font-bold leading-tight tracking-tighter text-transparent'>
+            <span className="bg-gradient-to-r from-indigo-600 to-purple-500 bg-clip-text text-xl font-bold leading-tight tracking-tighter text-transparent">
               {siteConfig.name}
             </span>
-            <span className='sr-only'>Trang chủ</span>
+            <span className="sr-only">Trang chủ</span>
           </Link>
         </div>
-        <ScrollArea className='my-4 h-[calc(100vh-8rem)] pb-10 pl-6'>
-          <div className='pl-1 pr-7'>
+        <ScrollArea className="my-4 h-[calc(100vh-8rem)] pb-10 pl-6">
+          <div className="pl-1 pr-7">
             {itemListWithoutItems?.map((item, index) => (
               <Link
                 key={index}
                 href={String(item.href)}
-                className='flex flex-1 items-center justify-between py-4 text-sm font-medium transition-all hover:underline [&[data-state=open]>svg]:rotate-180'
+                onClick={() => setOpen(false)}
+                className="flex flex-1 items-center justify-between py-4 text-sm font-medium transition-all hover:underline [&[data-state=open]>svg]:rotate-180"
               >
                 {item.title}
               </Link>
@@ -74,14 +76,15 @@ export function MobileNav({ items }: MobileNavProps) {
         </ScrollArea>
       </SheetContent>
     </Sheet>
-  )
+  );
 }
 
-interface MobileLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
-  href: string
-  disabled?: boolean
-  segment: string
-  setOpen: React.Dispatch<React.SetStateAction<boolean>>
+interface MobileLinkProps
+  extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
+  href: string;
+  disabled?: boolean;
+  segment: string;
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 function MobileLink({
@@ -97,9 +100,9 @@ function MobileLink({
     <Link
       href={href}
       className={cn(
-        'text-foreground/70 transition-colors hover:text-foreground',
-        href.includes(segment) && 'text-foreground',
-        disabled && 'pointer-events-none opacity-60',
+        "text-foreground/70 transition-colors hover:text-foreground",
+        href.includes(segment) && "text-foreground",
+        disabled && "pointer-events-none opacity-60",
         className
       )}
       onClick={() => setOpen(false)}
@@ -107,5 +110,5 @@ function MobileLink({
     >
       {children}
     </Link>
-  )
+  );
 }

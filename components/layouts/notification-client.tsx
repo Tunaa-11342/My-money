@@ -1,20 +1,37 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { NotificationBell } from './main-nav'
 
 export function NotificationClient() {
-  const [notifications, setNotifications] = useState([])
+  const [notifications, setNotifications] = useState<any[]>([])
 
-  useEffect(() => {
-    const fetchNoti = async () => {
-      const res = await fetch('/api/notifications')
-      if (res.ok) setNotifications(await res.json())
-    }
-    fetchNoti()
-    const interval = setInterval(fetchNoti, 30000)
-    return () => clearInterval(interval)
+  const fetchNoti = useCallback(async () => {
+    const res = await fetch('/api/notifications', {
+      credentials: 'include',
+      headers: { 'cache-control': 'no-store' },
+    })
+    if (res.ok) setNotifications(await res.json())
   }, [])
 
-  return <NotificationBell notifications={notifications} />
+  const markAllAsRead = useCallback(async () => {
+    await fetch('/api/notifications', {
+      method: 'PATCH',
+      credentials: 'include',
+    })
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+  }, [])
+
+  useEffect(() => {
+    fetchNoti()
+    const interval = setInterval(fetchNoti, 30000)
+    const listener = () => fetchNoti()
+    window.addEventListener('new-notification', listener)
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('new-notification', listener)
+    }
+  }, [fetchNoti])
+
+  return <NotificationBell notifications={notifications} markAllAsRead={markAllAsRead} />
 }

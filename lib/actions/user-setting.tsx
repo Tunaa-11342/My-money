@@ -1,5 +1,5 @@
 'use server'
-
+import { revalidateTag } from 'next/cache'
 import { db } from '../db'
 import { unstable_cache as cache, unstable_noStore as noStore, revalidatePath } from 'next/cache'
 
@@ -58,16 +58,17 @@ export async function updateUserSetting(userId: string, currency: string) {
   })
 }
 
+
 export async function updateUserBudget(userId: string, monthlyBudget: number) {
-  return await db.userSettings.update({
-    where: {
-      userId: userId,
-    },
-    data: {
-      monthlyBudget,
-    },
+  const updated = await db.userSettings.update({
+    where: { userId },
+    data: { monthlyBudget },
   })
+
+  revalidateTag('userSettings')
+  return updated
 }
+
 
 export async function getCurrentMonthSpending(userId: string) {
   const now = new Date()

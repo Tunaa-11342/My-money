@@ -17,8 +17,8 @@ import {
 } from "@/components/ui/navigation-menu";
 import { Icons } from "@/components/app-ui/icons";
 import { Wallet } from "lucide-react";
-import { Bell } from "lucide-react";
-import { useState } from "react";
+import { Bell, X } from "lucide-react";
+import { useState , useEffect} from "react";
 import {
   Popover,
   PopoverContent,
@@ -114,15 +114,30 @@ const ListItem = React.forwardRef<
 });
 ListItem.displayName = "ListItem";
 
-export function NotificationBell({ notifications }: { notifications: any[] }) {
-  const [data, setData] = useState(notifications);
+export function NotificationBell({
+  notifications,
+  markAllAsRead,
+}: {
+  notifications: any[]
+  markAllAsRead: () => void
+}) {
+  const [data, setData] = useState<any[]>(notifications)
 
-  const unreadCount = data.filter((n) => !n.read).length;
+  useEffect(() => {
+    setData(notifications)
+  }, [notifications])
 
-  const markAllAsRead = async () => {
-    await fetch("/api/notifications/read", { method: "POST" });
-    setData((prev) => prev.map((n) => ({ ...n, read: true })));
-  };
+  const unreadCount = data.filter(n => !n.read).length
+
+  const deleteNotification = async (id: string) => {
+    await fetch('/api/notifications', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ id }),
+    })
+    setData(prev => prev.filter(n => n.id !== id))
+  }
 
   return (
     <Popover>
@@ -136,12 +151,16 @@ export function NotificationBell({ notifications }: { notifications: any[] }) {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-72">
+
+      <PopoverContent className="w-72" forceMount>
         <div className="flex items-center justify-between mb-2">
           <h3 className="font-semibold">Thông báo</h3>
           {unreadCount > 0 && (
             <button
-              onClick={markAllAsRead}
+              onClick={() => {
+                markAllAsRead()
+                setData(prev => prev.map(n => ({ ...n, read: true })))
+              }}
               className="text-xs text-emerald-500 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300 font-medium transition-colors"
             >
               Đánh dấu đã đọc
@@ -150,27 +169,34 @@ export function NotificationBell({ notifications }: { notifications: any[] }) {
         </div>
 
         {data.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Không có thông báo nào
-          </p>
+          <p className="text-sm text-muted-foreground">Không có thông báo nào</p>
         ) : (
           <ul className="max-h-64 overflow-y-auto scrollbar-none">
-            {data.map((n) => (
+            {data.map(n => (
               <li
                 key={n.id}
-                className={`py-1 border-b last:border-none ${
-                  n.read ? "opacity-70" : ""
+                className={`py-1 border-b last:border-none flex justify-between items-start ${
+                  n.read ? 'opacity-70' : ''
                 }`}
               >
-                <p className="text-sm">{n.message}</p>
-                <p className="text-xs text-muted-foreground">
-                  {new Date(n.createdAt).toLocaleString()}
-                </p>
+                <div>
+                  <p className="text-sm">{n.message}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(n.createdAt).toLocaleString()}
+                  </p>
+                </div>
+                <button
+                  onClick={() => deleteNotification(n.id)}
+                  className="ml-2 text-muted-foreground hover:text-red-500"
+                  title="Xóa thông báo"
+                >
+                  <X className="w-3 h-3" />
+                </button>
               </li>
             ))}
           </ul>
         )}
       </PopoverContent>
     </Popover>
-  );
+  )
 }

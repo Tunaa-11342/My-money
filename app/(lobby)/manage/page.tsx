@@ -1,53 +1,63 @@
-import { CurrencyComboBox } from '@/components/app-logic/currency-combobox'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { getCachedUser } from '@/lib/queries/user'
-import { getCacheUserSetting } from '@/lib/actions/user-setting'
-import { redirect } from 'next/navigation'
-import React from 'react'
-import { CategoryList } from './_components/category-list'
-import { BudgetSetting } from './_components/budget-setting'
+import { CurrencyComboBox } from "@/components/app-logic/currency-combobox";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { getCachedUser } from "@/lib/queries/user";
+import { getCacheUserSetting } from "@/lib/actions/user-setting";
+import { redirect } from "next/navigation";
+import React from "react";
+import { CategoryList } from "./_components/category-list";
+import { BudgetSetting } from "./_components/budget-setting";
 
 async function ManagePage() {
-  const user = await getCachedUser()
+  const user = await getCachedUser();
   if (!user) {
-    redirect('/signin')
+    redirect("/signin");
   }
-  
-  const userSettings = await getCacheUserSetting(user.id)
+
+  const userSettings = await getCacheUserSetting(user.id);
   return (
     <>
       {/* HEADER */}
-      <div className='border-b bg-card'>
-        <div className='container flex flex-wrap items-center justify-between gap-6 py-8'>
+      <div className="border-b bg-card">
+        <div className="container flex flex-wrap items-center justify-between gap-6 py-8">
           <div>
-            <p className='text-3xl font-bold'>Cài đặt</p>
-            <p className='text-muted-foreground'>Quản lý các tùy chọn cài đặt và danh mục tài khoản của bạn</p>
+            <p className="text-3xl font-bold">Cài đặt</p>
+            <p className="text-muted-foreground">
+              Quản lý các tùy chọn cài đặt và danh mục tài khoản của bạn
+            </p>
           </div>
         </div>
       </div>
       {/* END HEDER */}
-      <div className='container flex flex-col gap-4 p-4'>
+      <div className="container flex flex-col gap-4 p-4">
         <Card>
           <CardHeader>
             <CardTitle>Tiền tệ</CardTitle>
-            <CardDescription>Đặt đơn vị tiền tệ mặc định cho giao dịch</CardDescription>
+            <CardDescription>
+              Đặt đơn vị tiền tệ mặc định cho giao dịch
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <CurrencyComboBox userId={user.id} />
           </CardContent>
         </Card>
         {userSettings && (
-          <BudgetSetting 
-            userId={user.id} 
-            currentBudget={userSettings.monthlyBudget || 0}
-            currency={userSettings.currency}
+          <BudgetSetting
+            userId={user.id}
+            currentBudget={userSettings?.monthlyBudget ?? 0}
+            currency={userSettings?.currency ?? "VND"}
           />
         )}
-        <CategoryList userId={user.id} type='income' />
-        <CategoryList userId={user.id} type='expense' />
+        <CategoryList userId={user.id} type="income" />
+        <CategoryList userId={user.id} type="expense" />
       </div>
     </>
-  )
+  );
 }
 
-export default ManagePage
+export default ManagePage;
