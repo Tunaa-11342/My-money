@@ -1,7 +1,7 @@
 import { ReactNode } from "react"
 
 import { getCachedUser } from "@/lib/queries/user"
-import { getCacheUserSetting } from "@/lib/actions/user-setting"
+import { getCreateUserSetting } from "@/lib/actions/user-setting"
 
 import { SiteHeader } from "@/components/layouts/site-header"
 import { SiteFooter } from "@/components/layouts/site-footer"
@@ -22,7 +22,7 @@ export default async function LobyLayout({ children, modal }: LobyLayoutProps) {
 
   // 3) Lấy user settings (currency, budget, theme…)
   const userSettings = user
-    ? await getCacheUserSetting(user.id)
+    ? await getCreateUserSetting(user.id)
     : null
 
   return (

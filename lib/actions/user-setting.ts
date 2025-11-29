@@ -3,6 +3,7 @@ import { revalidateTag } from 'next/cache'
 import { db } from '../db'
 import { unstable_cache as cache, unstable_noStore as noStore, revalidatePath } from 'next/cache'
 
+
 export async function getCacheUserSetting(userId: string) {
   return await cache(
     async () => {
@@ -71,6 +72,8 @@ export async function updateUserBudget(userId: string, monthlyBudget: number) {
 
 
 export async function getCurrentMonthSpending(userId: string) {
+  noStore() // <<< thêm dòng này
+
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
@@ -78,7 +81,7 @@ export async function getCurrentMonthSpending(userId: string) {
   const transactions = await db.transaction.findMany({
     where: {
       userId,
-      type: 'expense', 
+      type: "expense", // lowercase đúng model
       date: {
         gte: startOfMonth,
         lt: endOfMonth,
@@ -96,6 +99,6 @@ export async function getCurrentMonthSpending(userId: string) {
   return {
     currentSpending: totalSpending,
     monthlyBudget: settings?.monthlyBudget ?? 0,
-    currency: settings?.currency ?? 'VND',
+    currency: settings?.currency ?? "VND",
   }
 }

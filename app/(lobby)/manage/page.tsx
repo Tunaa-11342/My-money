@@ -7,7 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getCachedUser } from "@/lib/queries/user";
-import { getCacheUserSetting } from "@/lib/actions/user-setting";
+import { getCreateUserSetting } from "@/lib/actions/user-setting";
 import { redirect } from "next/navigation";
 import React from "react";
 import { CategoryList } from "./_components/category-list";
@@ -19,7 +19,7 @@ async function ManagePage() {
     redirect("/signin");
   }
 
-  const userSettings = await getCacheUserSetting(user.id);
+const userSettings = await getCreateUserSetting(user.id)
   return (
     <>
       {/* HEADER */}
