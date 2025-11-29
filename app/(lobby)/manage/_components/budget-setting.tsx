@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -29,36 +29,6 @@ export function BudgetSetting({
   const [budget, setBudget] = useState(currentBudget.toString());
   const [isLoading, setIsLoading] = useState(false);
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const checkAndNotify = async () => {
-      const budgetValue = parseFloat(budget);
-      if (!budgetValue || isNaN(budgetValue)) return;
-
-      const percentage = (currentBudget / budgetValue) * 100;
-      if (percentage < 90) return;
-
-      const message =
-        percentage >= 100
-          ? `⚠️ Ngân sách hiện tại (${currentBudget.toLocaleString()} VND) đã vượt giới hạn ${budgetValue.toLocaleString()} VND!`
-          : `Ngân sách tháng này đã đạt ${percentage.toFixed(
-              1
-            )}%. Hãy kiểm soát chi tiêu!`;
-
-      try {
-        const res = await fetch("/api/notifications", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message }),
-        });
-        if (!res.ok) console.error("Không thể gửi thông báo.");
-      } catch (err) {
-        console.error("Lỗi khi gửi thông báo:", err);
-      }
-    };
-
-    checkAndNotify();
-  }, [currentBudget, budget]);
 
   const handleSave = async () => {
     setIsLoading(true);
@@ -95,31 +65,34 @@ export function BudgetSetting({
       <CardHeader>
         <CardTitle>Ngân sách hàng tháng</CardTitle>
         <CardDescription>
-          Đặt giới hạn chi tiêu hàng tháng để nhận thông báo khi sắp vượt quá
-          ngân sách
+          Đặt giới hạn chi tiêu hàng tháng để nhận thông báo khi chuẩn bị vượt ngân sách.
         </CardDescription>
       </CardHeader>
+
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="budget">Ngân sách hàng tháng</Label>
+
           <div className="flex items-center space-x-2">
             <Input
               id="budget"
               type="number"
               value={budget}
               onChange={(e) => setBudget(e.target.value)}
-              placeholder="Nhập số tiền..."
+              placeholder="Nhập số tiền."
               min="0"
               step="1000"
             />
             <span className="text-sm text-muted-foreground">{currency}</span>
           </div>
+
           {currentBudget > 0 && (
             <p className="text-sm text-muted-foreground">
               Ngân sách hiện tại: {formatCurrency(currentBudget)}
             </p>
           )}
         </div>
+
         <Button onClick={handleSave} disabled={isLoading}>
           {isLoading ? "Đang lưu..." : "Lưu ngân sách"}
         </Button>

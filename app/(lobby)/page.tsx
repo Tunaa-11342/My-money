@@ -44,12 +44,12 @@ export default function IndexPage() {
             className="animate-fade-up flex flex-wrap items-center justify-center gap-4 mt-4"
             style={{ animationDelay: "0.4s", animationFillMode: "both" }}
           >
-            <Button asChild size="lg" className="px-6 py-5 text-base">
+            {/* <Button asChild size="lg" className="px-6 py-5 text-base">
               <Link href="/wizard">
                 Bắt đầu ngay
                 <span className="sr-only">go to wizard</span>
               </Link>
-            </Button>
+            </Button> */}
 
             <Button
               asChild
@@ -58,7 +58,7 @@ export default function IndexPage() {
               className="px-6 py-5 text-base border-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
             >
               <Link href="/dashboard">
-                Xem tổng quan
+                Bắt đầu ngay
                 <span className="sr-only">go to dashboard</span>
               </Link>
             </Button>

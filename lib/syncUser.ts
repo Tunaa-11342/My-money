@@ -5,9 +5,12 @@ export async function syncCurrentUser() {
   const user = await currentUser()
   if (!user) return null
 
-  const existing = await prisma.user.findUnique({ where: { id: user.id } })
+  // 1. Sync User table
+  const existingUser = await prisma.user.findUnique({
+    where: { id: user.id },
+  })
 
-  if (!existing) {
+  if (!existingUser) {
     await prisma.user.create({
       data: {
         id: user.id,
@@ -15,6 +18,44 @@ export async function syncCurrentUser() {
         name: user.fullName || "Người dùng",
         imageUrl: user.imageUrl || "",
       },
+    })
+  }
+
+  // 2. Sync UserSettings
+  let settings = await prisma.userSettings.findUnique({
+    where: { userId: user.id },
+  })
+
+  if (!settings) {
+    settings = await prisma.userSettings.create({
+      data: {
+        userId: user.id,
+        currency: "VND",
+        monthlyBudget: 0,
+      },
+    })
+  }
+
+  // 3. Sync default categories
+  const categoryCount = await prisma.category.count({
+    where: { userId: user.id },
+  })
+
+  if (categoryCount === 0) {
+    const defaultCategories = [
+      { name: "Ăn uống", type: "expense", icon: "🍚" },
+      { name: "Tiền điện", type: "expense", icon: "💡" },
+      { name: "Tiền nước", type: "expense", icon: "🚿" },
+      { name: "Dầu gội", type: "expense", icon: "🧴" },
+      { name: "Tiền lương", type: "income", icon: "💵" },
+      { name: "Tiền thưởng", type: "income", icon: "🎁" },
+    ]
+
+    await prisma.category.createMany({
+      data: defaultCategories.map((c) => ({
+        ...c,
+        userId: user.id,
+      })),
     })
   }
 

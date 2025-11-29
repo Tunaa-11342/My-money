@@ -37,7 +37,7 @@ export const siteConfig = {
       description: "Manage your account and orders.",
     },
     {
-      title: "Giao dịch",
+      title: "Báo cáo",
       href: "/transactions",
       description: "Manage your account and orders.",
     },

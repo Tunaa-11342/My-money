@@ -17,7 +17,7 @@ async function main() {
       where: {
         name: cat.name,
         type: cat.type,
-        userId: null, // vẫn giữ để lọc riêng default
+        userId: null,
       },
     });
 

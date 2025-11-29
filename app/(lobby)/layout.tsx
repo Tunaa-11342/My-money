@@ -1,24 +1,39 @@
-import { getCachedUser } from '@/lib/queries/user'
-import { getCacheUserSetting } from '@/lib/actions/user-setting'
-import { SiteFooter } from '@/components/layouts/site-footer'
-import { SiteHeader } from '@/components/layouts/site-header'
+import { ReactNode } from "react"
 
-interface LobyLayoutProps
-  extends React.PropsWithChildren<{
-    modal: React.ReactNode
-  }> {}
+import { getCachedUser } from "@/lib/queries/user"
+import { getCacheUserSetting } from "@/lib/actions/user-setting"
 
-export default async function LobyLayout({ children }: LobyLayoutProps) {
+import { SiteHeader } from "@/components/layouts/site-header"
+import { SiteFooter } from "@/components/layouts/site-footer"
+
+import { syncCurrentUser } from "@/lib/syncUser"
+
+interface LobyLayoutProps {
+  children: ReactNode
+  modal: ReactNode
+}
+
+export default async function LobyLayout({ children, modal }: LobyLayoutProps) {
+  // 1) Đồng bộ user vào DB (nếu chưa có)
+  await syncCurrentUser()
+
+  // 2) Lấy thông tin user từ Clerk cache
   const user = await getCachedUser()
-  const userSettings = user ? await getCacheUserSetting(user.id) : null
+
+  // 3) Lấy user settings (currency, budget, theme…)
+  const userSettings = user
+    ? await getCacheUserSetting(user.id)
+    : null
 
   return (
-    <div className='relative flex min-h-screen flex-col'>
+    <div className="relative flex min-h-screen flex-col">
       <SiteHeader user={user} userSettings={userSettings} />
-      <main className='flex-1'>
+
+      <main className="flex-1">
         {children}
         {/* {modal} */}
       </main>
+
       {/* <SiteFooter /> */}
     </div>
   )
