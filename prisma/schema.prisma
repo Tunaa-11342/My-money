@@ -8,25 +8,33 @@ datasource db {
 }
 
 model User {
-  id          String       @id @default(cuid())
-  email       String       @unique
-  name        String?
-  createdAt   DateTime     @default(now())
-  imageUrl    String?
-  memberships Membership[]
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  imageUrl  String?
+
+  userSettings UserSettings?
+  memberships  Membership[]
 }
 
 model UserSettings {
-  userId        String @id
-  currency      String
-  monthlyBudget Float? @default(0)
+  id String? @default(uuid())
+
+  userId String @unique
+
+  currency      String  @default("VND")
+  monthlyBudget Float   @default(0)
+  firstLogin    Boolean @default(true)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Category {
-  id        String   @id @default(cuid())        
+  id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   name      String
-  userId    String?                             
+  userId    String?
   icon      String
   type      String   @default("income")
 
@@ -86,8 +94,9 @@ model Membership {
   groupId   String
   role      String   @default("member")
   createdAt DateTime @default(now())
-  group     Group    @relation(fields: [groupId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
+
+  group Group @relation(fields: [groupId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
 }
 
 model Expense {
@@ -99,7 +108,8 @@ model Expense {
   groupId      String
   createdAt    DateTime        @default(now())
   categoryName ExpenseCategory
-  group        Group           @relation(fields: [groupId], references: [id])
+
+  group Group @relation(fields: [groupId], references: [id])
 }
 
 model Notification {

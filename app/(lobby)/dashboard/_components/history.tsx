@@ -24,7 +24,12 @@ import {
 import { getHistoryData } from "@/lib/actions/history";
 import HistoryPeriodSelector from "./history-period-selector";
 
-function History({ userSettings }: { userSettings: UserSettings }) {
+function History({ userSettings }: { userSettings: UserSettings | null }) {
+  if (!userSettings) return null; 
+  return <HistoryContent userSettings={userSettings} />;
+}
+
+function HistoryContent({ userSettings }: { userSettings: UserSettings }) {
   const [timeframe, setTimeframe] = useState<Timeframe>("month");
   const [period, setPeriod] = useState<Period>({
     month: new Date().getMonth(),

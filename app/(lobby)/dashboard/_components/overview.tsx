@@ -9,11 +9,17 @@ import { toast } from "sonner";
 import StatsCards from "./stats-card";
 import CategoriesStats from "./categories-stats";
 
-function Overview({ userSettings }: { userSettings: UserSettings }) {
-  const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
+type OverviewProps = {
+  userSettings: UserSettings | null
+}
+
+function Overview({ userSettings }: { userSettings: UserSettings | null }) {
+  const [dateRange, setDateRange] = useState({
     from: startOfMonth(new Date()),
     to: new Date(),
   });
+  if (!userSettings) return null;
+
 
   return (
     <>

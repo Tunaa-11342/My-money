@@ -2,7 +2,14 @@
 import { revalidateTag } from 'next/cache'
 import { db } from '../db'
 import { unstable_cache as cache, unstable_noStore as noStore, revalidatePath } from 'next/cache'
+import { prisma } from "@/lib/prisma"
 
+export async function updateFirstLogin(userId: string) {
+  await prisma.userSettings.update({
+    where: { userId },
+    data: { firstLogin: false }
+  })
+}
 
 export async function getCacheUserSetting(userId: string) {
   return await cache(
