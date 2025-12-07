@@ -11,7 +11,6 @@ export default async function DashboardPage() {
   const rawUser = await getCachedUser();
   if (!rawUser) redirect("/signin");
 
-  // CHUYỂN USER THÀNH PLAIN OBJECT
   const safeUser = {
     id: rawUser.id,
     firstName: rawUser.firstName ?? null,
@@ -22,7 +21,6 @@ export default async function DashboardPage() {
     where: { userId: rawUser.id },
   });
 
-  // CHUYỂN SETTINGS THÀNH PLAIN OBJECT
   const safeSettings = rawSettings
     ? {
         id: rawSettings.id,
@@ -35,7 +33,6 @@ export default async function DashboardPage() {
 
   return (
     <div className="h-full bg-background">
-      {/* PHẢI DÙNG safeUser & safeSettings */}
       <WizardDialogWrapper user={safeUser} settings={safeSettings} />
 
       <div className="border-b bg-card">
@@ -90,7 +87,6 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* PHẢI DÙNG safeSettings */}
       {safeSettings ? (
         <>
           <Overview userSettings={safeSettings} />

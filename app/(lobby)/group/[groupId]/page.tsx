@@ -5,6 +5,8 @@ import { AddExpenseDialog } from "@/components/dialog/group-expense";
 import { InviteMemberDialog } from "@/components/dialog/invite-member-dialog";
 import Link from "next/link";
 import GroupReport from "@/components/group/group-report";
+import { MemberList } from "@/components/group/member-list";
+
 interface GroupPageProps {
   params: { groupId: string };
   searchParams: { view?: string };
@@ -25,6 +27,7 @@ export default async function GroupDetailPage({
   const currentView = searchParams.view === "report" ? "report" : "dashboard";
   const user = await currentUser();
   if (!user) return <p className="p-4">Vui lòng đăng nhập để xem nhóm</p>;
+  const currentUserId = user.id;
 
   const group = await prisma.group.findUnique({
     where: { id: params.groupId },
@@ -46,7 +49,6 @@ export default async function GroupDetailPage({
 
   return (
     <div className="container py-10">
-      {/* 🏷️ Tiêu đề nhóm */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 text-transparent bg-clip-text">
@@ -86,18 +88,40 @@ export default async function GroupDetailPage({
         </nav>
       </div>
 
-      {/* 📄 Bố cục chính */}
       <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
         {/* SIDEBAR */}
+        {/* SIDEBAR */}
         <aside className="lg:col-span-2 space-y-6">
-          {/* ⚡ Hành động nhanh */}
+          {/* QUICK ACTIONS */}
           <div className="border rounded-xl p-4 space-y-4 shadow-md bg-gradient-to-br from-indigo-500/5 via-background to-purple-500/5 backdrop-blur-sm">
             <h2 className="font-semibold text-lg">Hành động nhanh</h2>
             <AddExpenseDialog groupId={group.id} />
             <InviteMemberDialog inviteCode={group.inviteCode} />
           </div>
 
-          {/* 🚪 Rời hoặc Xóa phòng */}
+          {/* MEMBER LIST */}
+          <div className="border rounded-xl p-4 shadow-md bg-gradient-to-br from-green-500/5 via-background to-emerald-500/5 backdrop-blur-sm">
+            <h2 className="font-semibold text-lg mb-3">
+              Thành viên ({group.memberships.length})
+            </h2>
+
+            <MemberList
+              groupId={group.id}
+              initialMembers={group.memberships.map((m) => ({
+                id: m.id,
+                userId: m.userId,
+                user: {
+                  id: m.user.id,
+                  name: m.user.name,
+                  imageUrl: m.user.imageUrl,
+                },
+              }))}
+              isOwner={isOwner}
+              currentUserId={currentUserId}
+            />
+          </div>
+
+          {/* DANGER */}
           <div className="border rounded-xl p-4 space-y-3 shadow-md bg-gradient-to-br from-red-500/5 via-background to-orange-500/5 backdrop-blur-sm">
             {isOwner ? (
               <Button variant="destructive" className="w-full">
@@ -110,13 +134,10 @@ export default async function GroupDetailPage({
             )}
           </div>
         </aside>
-
         {/* MAIN CONTENT */}
         <section className="lg:col-span-8 space-y-6">
-          {/* Dashboard tổng quan */}
           {currentView === "dashboard" && (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Ngân sách */}
               <div className="p-5 rounded-xl border bg-gradient-to-br from-emerald-500/10 via-background to-emerald-500/5 hover:shadow-lg transition-all">
                 <h3 className="font-medium mb-1">Ngân sách</h3>
                 <p className="text-2xl font-bold text-emerald-600">
@@ -124,7 +145,6 @@ export default async function GroupDetailPage({
                 </p>
               </div>
 
-              {/* Số tiền còn lại */}
               <div className="p-5 rounded-xl border bg-gradient-to-br from-blue-500/10 via-background to-indigo-500/5 hover:shadow-lg transition-all">
                 <h3 className="font-medium mb-1">Số tiền còn lại</h3>
                 <p
