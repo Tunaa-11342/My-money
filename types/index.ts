@@ -1,68 +1,105 @@
-import type { Icons } from '@/components/app-ui/icons'
+import type { Icons } from "@/components/app-ui/icons";
 
-export type TransactionType = 'income' | 'expense'
-export type Timeframe = 'year' | 'month' | 'week'
+export type TransactionType = "income" | "expense";
+export type Timeframe = "year" | "month" | "week";
 export type Period = {
-  year: number
-  month?: number
-  week?: number
+  year: number;
+  month?: number;
+  week?: number;
+};
+
+// Kế hoạch chi tiêu
+export type PlanTimeScale = "year" | "quarter" | "month" | "week" | "custom";
+
+export type PlanStatus = "active" | "upcoming" | "completed" | "expired";
+
+export interface SpendingPlan {
+  id: string;
+
+  name: string;
+  description?: string;
+
+  timeScale: PlanTimeScale;
+  startDate: string; // ISO
+  endDate: string; // ISO
+
+  period: {
+    year: number;
+    quarter?: 1 | 2 | 3 | 4;
+    month?: number; // 1–12
+    weekOfYear?: number; // 1–53
+  };
+
+  totalBudget: number;
+  actualSpending: number;
+  progressPercent: number;
+
+  categories: string[];
+  tags?: string[];
+
+  pinned: boolean;
+  status: PlanStatus;
+
+  dueDate?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface NavItem {
-  title: string
-  href?: string
-  disabled?: boolean
-  external?: boolean
-  icon?: keyof typeof Icons
-  label?: string
-  description?: string
+  title: string;
+  href?: string;
+  disabled?: boolean;
+  external?: boolean;
+  icon?: keyof typeof Icons;
+  label?: string;
+  description?: string;
 }
 
 export interface NavItemWithChildren extends NavItem {
-  items: NavItemWithChildren[]
+  items: NavItemWithChildren[];
 }
 
 export interface NavItemWithOptionalChildren extends NavItem {
-  items?: NavItemWithChildren[]
+  items?: NavItemWithChildren[];
 }
 
 export interface FooterItem {
-  title: string
+  title: string;
   items: {
-    title: string
-    href: string
-    external?: boolean
-  }[]
+    title: string;
+    href: string;
+    external?: boolean;
+  }[];
 }
 
-export type MainNavItem = NavItemWithOptionalChildren
+export type MainNavItem = NavItemWithOptionalChildren;
 
-export type SidebarNavItem = NavItemWithChildren
+export type SidebarNavItem = NavItemWithChildren;
 
 export interface SearchParams {
-  [key: string]: string | string[] | undefined
+  [key: string]: string | string[] | undefined;
 }
 
 // export interface UploadedFile<T = unknown> extends ClientUploadedFileData<T> {}
 
 export interface StoredFile {
-  id: string
-  name: string
-  url: string
+  id: string;
+  name: string;
+  url: string;
 }
 
 export interface Option {
-  label: string
-  value: string
-  icon?: React.ComponentType<{ className?: string }>
-  withCount?: boolean
+  label: string;
+  value: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  withCount?: boolean;
 }
 
 export interface DataTableFilterField<TData> {
-  label: string
-  value: keyof TData
-  placeholder?: string
-  options?: Option[]
+  label: string;
+  value: keyof TData;
+  placeholder?: string;
+  options?: Option[];
 }
 
 // export type DrizzleWhere<T> = SQL<unknown> | ((aliases: T) => SQL<T> | undefined) | undefined
@@ -70,21 +107,21 @@ export interface DataTableFilterField<TData> {
 // export type StripePaymentStatus = Stripe.PaymentIntent.Status
 
 export interface SubscriptionPlan {
-  title: 'Free' | 'Standard' | 'Pro'
-  description: string
-  features: string[]
-  stripePriceId: string
+  title: "Free" | "Standard" | "Pro";
+  description: string;
+  features: string[];
+  stripePriceId: string;
 }
 
 export interface SubscriptionPlanWithPrice extends SubscriptionPlan {
-  price: string
+  price: string;
 }
 
 export interface UserSubscriptionPlan extends SubscriptionPlan {
-  stripeSubscriptionId?: string | null
-  stripeCurrentPeriodEnd?: string | null
-  stripeCustomerId?: string | null
-  isSubscribed: boolean
-  isCanceled: boolean
-  isActive: boolean
+  stripeSubscriptionId?: string | null;
+  stripeCurrentPeriodEnd?: string | null;
+  stripeCustomerId?: string | null;
+  isSubscribed: boolean;
+  isCanceled: boolean;
+  isActive: boolean;
 }

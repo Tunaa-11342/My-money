@@ -42,6 +42,12 @@ export const siteConfig = {
       description: "Manage your account and orders.",
     },
     {
+      title: "Kế hoạch",
+      href: "/plans",
+      description:
+        "Lập và theo dõi kế hoạch chi tiêu theo năm / quý / tháng / tuần.",
+    },
+    {
       title: "Nhóm",
       href: "/group",
       description: "Manage your account and orders.",

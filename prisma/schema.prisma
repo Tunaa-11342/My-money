@@ -14,8 +14,9 @@ model User {
   createdAt DateTime @default(now())
   imageUrl  String?
 
-  userSettings UserSettings?
-  memberships  Membership[]
+  userSettings     UserSettings?
+  memberships      Membership[]
+  plannedSpendings PlannedSpending[]
 }
 
 model UserSettings {
@@ -31,12 +32,13 @@ model UserSettings {
 }
 
 model Category {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  name      String
-  userId    String?
-  icon      String
-  type      String   @default("income")
+  id               String            @id @default(cuid())
+  createdAt        DateTime          @default(now())
+  name             String
+  userId           String?
+  icon             String
+  type             String            @default("income")
+  plannedSpendings PlannedSpending[]
 
   @@unique([name, userId, type])
 }
@@ -126,4 +128,32 @@ enum ExpenseCategory {
   shopping
   entertainment
   other
+}
+
+enum PlannedPeriodType {
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+model PlannedSpending {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  categoryId   String?
+  category     Category?         @relation(fields: [categoryId], references: [id])
+  title        String
+  periodType   PlannedPeriodType
+  periodKey    String
+  targetAmount Decimal           @db.Decimal(14, 2)
+  isPinned     Boolean           @default(false)
+  notes        String?
+  color        String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([userId, periodType, periodKey])
+  @@index([userId, categoryId, periodType, periodKey])
 }
