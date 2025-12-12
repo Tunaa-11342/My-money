@@ -353,3 +353,18 @@ export async function getPinnedPlansForDashboard(
     return false;
   });
 }
+
+export async function deletePlannedSpending(userId: string, planId: string) {
+  const plan = await db.plannedSpending.findFirst({
+    where: { id: planId, userId },
+    select: { id: true },
+  });
+
+  if (!plan) {
+    throw new Error("Kế hoạch không tồn tại hoặc không thuộc về bạn");
+  }
+
+  await db.plannedSpending.delete({
+    where: { id: planId },
+  });
+}

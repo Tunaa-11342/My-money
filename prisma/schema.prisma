@@ -8,15 +8,17 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
+  id        String        @id @default(cuid())
+  email     String        @unique
   name      String?
-  createdAt DateTime @default(now())
+  createdAt DateTime      @default(now())
   imageUrl  String?
 
   userSettings     UserSettings?
   memberships      Membership[]
   plannedSpendings PlannedSpending[]
+  savingGoals      SavingGoal[]
+  debtPlans        DebtPlan[]    
 }
 
 model UserSettings {
@@ -156,4 +158,51 @@ model PlannedSpending {
 
   @@index([userId, periodType, periodKey])
   @@index([userId, categoryId, periodType, periodKey])
+}
+
+enum DebtCategory {
+  COLLECT 
+  BORROW  
+  LEND    
+  REPAY   
+}
+
+model SavingGoal {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title         String
+  targetAmount  Decimal  @db.Decimal(14, 2)
+  currentAmount Decimal  @db.Decimal(14, 2) @default(0)
+
+  startDate     DateTime @default(now())
+  targetDate    DateTime?
+
+  isPinned      Boolean  @default(false)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userId, isPinned])
+}
+
+model DebtPlan {
+  id        String       @id @default(cuid())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title     String
+  category  DebtCategory
+  amount    Decimal      @db.Decimal(14, 2)
+  isPinned  Boolean      @default(false)
+
+  notes     String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([userId])
+  @@index([userId, category])
+  @@index([userId, isPinned])
 }

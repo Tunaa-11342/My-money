@@ -1,10 +1,12 @@
-// app/(lobby)/plans/_components/plans-view.tsx
 "use client";
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { getUserSpendingPlans, togglePlanPinned } from "@/lib/actions/planned-spending";
+import {
+  getUserSpendingPlans,
+  togglePlanPinned,
+} from "@/lib/actions/planned-spending";
 import type { SpendingPlan } from "@/types";
 import { ActivePlansTab } from "./active-plans-tab";
 import { AllPlansTab } from "./all-plans-tab";
@@ -15,8 +17,10 @@ interface PlansViewProps {
   userId: string;
 }
 
+type ViewTab = "active" | "all";
+
 export function PlansView({ userId }: PlansViewProps) {
-  const [tab, setTab] = useState<"active" | "all">("active");
+  const [tab, setTab] = useState<ViewTab>("active");
   const queryClient = useQueryClient();
 
   const { data: plans = [], isFetching } = useQuery<SpendingPlan[]>({
@@ -43,18 +47,30 @@ export function PlansView({ userId }: PlansViewProps) {
 
   return (
     <SkeletonWrapper isLoading={isFetching}>
-      <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="space-y-4">
+      <Tabs
+        value={tab}
+        onValueChange={(v) => setTab(v as ViewTab)}
+        className="space-y-4"
+      >
         <TabsList>
           <TabsTrigger value="active">Đang thực hiện</TabsTrigger>
           <TabsTrigger value="all">Toàn bộ kế hoạch</TabsTrigger>
         </TabsList>
 
         <TabsContent value="active">
-          <ActivePlansTab plans={activePlans} onTogglePin={handleTogglePin} />
+          <ActivePlansTab
+            userId={userId}
+            plans={activePlans}
+            onTogglePin={handleTogglePin}
+          />
         </TabsContent>
 
         <TabsContent value="all">
-          <AllPlansTab plans={plans} onTogglePin={handleTogglePin} />
+          <AllPlansTab
+            userId={userId}
+            plans={plans}
+            onTogglePin={handleTogglePin}
+          />
         </TabsContent>
       </Tabs>
     </SkeletonWrapper>

@@ -1,12 +1,10 @@
-// app/(lobby)/plans/_components/create-plan-dialog.tsx
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CalendarRange } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -16,9 +14,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormField,
@@ -27,19 +27,23 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import {
   Select,
-  SelectTrigger,
   SelectContent,
   SelectItem,
+  SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { createPlannedSpending } from "@/lib/actions/planned-spending";
-import { PlannedPeriodType } from "@prisma/client";
 
-const formSchema = z
+import { PlannedPeriodType, DebtCategory } from "@prisma/client";
+
+import { createPlannedSpending } from "@/lib/actions/planned-spending";
+import { createSavingGoal } from "@/lib/actions/saving-goals";
+import { createDebtPlan } from "@/lib/actions/debts";
+
+type TabKey = "spending" | "saving" | "debt";
+
+const spendingSchema = z
   .object({
     title: z.string().min(1, "Nhập tên kế hoạch"),
     periodType: z.nativeEnum(PlannedPeriodType),
@@ -48,319 +52,588 @@ const formSchema = z
     month: z.coerce.number().int().min(1).max(12).optional(),
     weekOfYear: z.coerce.number().int().min(1).max(53).optional(),
     targetAmount: z.coerce.number().positive("Số tiền mục tiêu phải lớn hơn 0"),
-    // TODO: sau này m có thể đổi thành select category
     categoryId: z.string().optional(),
     isPinned: z.boolean().default(false),
   })
   .superRefine((data, ctx) => {
-    if (data.periodType === "QUARTERLY" && !data.quarter) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Chọn quý",
-        path: ["quarter"],
-      });
-    }
-    if (data.periodType === "MONTHLY" && !data.month) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Chọn tháng",
-        path: ["month"],
-      });
-    }
-    if (data.periodType === "WEEKLY" && !data.weekOfYear) {
+    if (data.periodType === "QUARTERLY" && !data.quarter)
+      ctx.addIssue({ code: "custom", message: "Chọn quý", path: ["quarter"] });
+    if (data.periodType === "MONTHLY" && !data.month)
+      ctx.addIssue({ code: "custom", message: "Chọn tháng", path: ["month"] });
+    if (data.periodType === "WEEKLY" && !data.weekOfYear)
       ctx.addIssue({
         code: "custom",
         message: "Chọn tuần",
         path: ["weekOfYear"],
       });
-    }
   });
 
-type FormValues = z.infer<typeof formSchema>;
+const savingSchema = z.object({
+  title: z.string().min(1),
+  targetAmount: z.coerce.number().positive(),
+  currentAmount: z.coerce.number().min(0).optional(),
+  targetDate: z.string().optional(),
+  isPinned: z.boolean().default(false),
+});
 
-interface CreatePlanDialogProps {
+const debtSchema = z.object({
+  title: z.string().min(1),
+  category: z.nativeEnum(DebtCategory),
+  amount: z.coerce.number().positive(),
+  notes: z.string().optional(),
+  isPinned: z.boolean().default(false),
+});
+
+type CreatePlanDialogProps = {
   userId: string;
-  /**
-   * Nếu muốn dùng dialog ở nhiều chỗ (header / empty state), cho phép truyền custom label
-   */
   triggerVariant?: "primary" | "outline";
   triggerText?: string;
-}
+};
 
 export function CreatePlanDialog({
   userId,
   triggerVariant = "primary",
   triggerText = "Tạo kế hoạch",
 }: CreatePlanDialogProps) {
-  const [open, setOpen] = useState(false);
-  const [isPending, startTransition] = useTransition();
   const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<TabKey>("spending");
+  const [isPending, startTransition] = useTransition();
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+  const spendingForm = useForm<z.infer<typeof spendingSchema>>({
+    resolver: zodResolver(spendingSchema),
     defaultValues: {
       title: "",
       periodType: "MONTHLY",
       year: new Date().getFullYear(),
-      quarter: 1,
-      month: new Date().getMonth() + 1,
-      weekOfYear: 1,
       targetAmount: 0,
-      categoryId: undefined,
       isPinned: false,
     },
   });
 
-  const periodType = form.watch("periodType");
+  const savingForm = useForm<z.infer<typeof savingSchema>>({
+    resolver: zodResolver(savingSchema),
+    defaultValues: {
+      title: "",
+      targetAmount: 0,
+      currentAmount: 0,
+      isPinned: false,
+    },
+  });
 
-  function onSubmit(values: FormValues) {
-    startTransition(async () => {
-      try {
-        await createPlannedSpending({
-          userId,
-          title: values.title,
-          periodType: values.periodType,
-          year: values.year,
-          quarter:
-            values.periodType === "QUARTERLY" ? values.quarter : undefined,
-          month: values.periodType === "MONTHLY" ? values.month : undefined,
-          weekOfYear:
-            values.periodType === "WEEKLY" ? values.weekOfYear : undefined,
-          targetAmount: values.targetAmount,
-          categoryId: values.categoryId || null,
-          isPinned: values.isPinned,
-        });
+  const debtForm = useForm<z.infer<typeof debtSchema>>({
+    resolver: zodResolver(debtSchema),
+    defaultValues: {
+      title: "",
+      category: "BORROW",
+      amount: 0,
+      isPinned: false,
+      notes: "",
+    },
+  });
 
-        toast.success("Tạo kế hoạch thành công");
+  const triggerBtnVariant =
+    triggerVariant === "outline" ? "outline" : "default";
 
-        form.reset({
-          title: "",
-          periodType: values.periodType,
-          year: values.year,
-          quarter: values.quarter,
-          month: values.month,
-          weekOfYear: values.weekOfYear,
-          targetAmount: 0,
-          categoryId: undefined,
-          isPinned: false,
-        });
-
-        setOpen(false);
-        router.refresh();
-      } catch (error) {
-        console.error(error);
-        toast.error("Không tạo được kế hoạch, vui lòng thử lại.");
-      }
-    });
-  }
-
-  const triggerButton =
-    triggerVariant === "primary" ? (
-      <Button className="gap-2">
-        <CalendarRange className="h-4 w-4" />
-        {triggerText}
-      </Button>
-    ) : (
-      <Button variant="outline" className="gap-2">
-        <CalendarRange className="h-4 w-4" />
-        {triggerText}
-      </Button>
-    );
+  const titleByTab = useMemo(() => {
+    if (tab === "spending") return "Kế hoạch chi tiêu";
+    if (tab === "saving") return "Mục tiêu tiết kiệm";
+    return "Vay / Nợ";
+  }, [tab]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{triggerButton}</DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogTrigger asChild>
+        <Button variant={triggerBtnVariant}>{triggerText}</Button>
+      </DialogTrigger>
+
+      <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Tạo kế hoạch chi tiêu</DialogTitle>
-          <DialogDescription>
-            Đặt tên, chọn chu kỳ và số tiền mục tiêu cho kế hoạch chi tiêu của
-            bạn.
-          </DialogDescription>
+          <DialogTitle>Tạo kế hoạch</DialogTitle>
+          <DialogDescription>{titleByTab}</DialogDescription>
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Tên kế hoạch */}
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tên kế hoạch</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Ví dụ: Kế hoạch chi tiêu Tháng 12/2025"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="spending">Chi tiêu</TabsTrigger>
+            <TabsTrigger value="saving">Tiết kiệm</TabsTrigger>
+            <TabsTrigger value="debt">Vay/Nợ</TabsTrigger>
+          </TabsList>
 
-            {/* Chu kỳ & năm */}
-            <div className="grid grid-cols-2 gap-3">
-              <FormField
-                control={form.control}
-                name="periodType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Chu kỳ</FormLabel>
-                    <FormControl>
-                      <Select
-                        value={field.value}
-                        onValueChange={(value) =>
-                          field.onChange(value as PlannedPeriodType)
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="YEARLY">Theo năm</SelectItem>
-                          <SelectItem value="QUARTERLY">Theo quý</SelectItem>
-                          <SelectItem value="MONTHLY">Theo tháng</SelectItem>
-                          <SelectItem value="WEEKLY">Theo tuần</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          {/* TAB 1: CHI TIÊU */}
+          <TabsContent value="spending" className="mt-4">
+            <Form {...spendingForm}>
+              <form
+                className="space-y-4"
+                onSubmit={spendingForm.handleSubmit((values) => {
+                  startTransition(async () => {
+                    try {
+                      toast.loading("Đang tạo kế hoạch...", {
+                        id: "create-plan",
+                      });
 
-              <FormField
-                control={form.control}
-                name="year"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Năm</FormLabel>
-                    <FormControl>
-                      <Input type="number" min={2000} max={2100} {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                      await createPlannedSpending({
+                        userId,
+                        title: values.title,
+                        periodType: values.periodType,
+                        year: values.year,
+                        quarter: values.quarter,
+                        month: values.month,
+                        weekOfYear: values.weekOfYear,
+                        targetAmount: values.targetAmount,
+                        categoryId: values.categoryId ?? null,
+                        isPinned: values.isPinned,
+                      });
 
-            {/* Quý / Tháng / Tuần tùy theo periodType */}
-            {periodType === "QUARTERLY" && (
-              <FormField
-                control={form.control}
-                name="quarter"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Quý</FormLabel>
-                    <FormControl>
-                      <Select
-                        value={field.value?.toString()}
-                        onValueChange={(value) => field.onChange(Number(value))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Chọn quý" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="1">Quý 1</SelectItem>
-                          <SelectItem value="2">Quý 2</SelectItem>
-                          <SelectItem value="3">Quý 3</SelectItem>
-                          <SelectItem value="4">Quý 4</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-
-            {periodType === "MONTHLY" && (
-              <FormField
-                control={form.control}
-                name="month"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tháng</FormLabel>
-                    <FormControl>
-                      <Input type="number" min={1} max={12} {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-
-            {periodType === "WEEKLY" && (
-              <FormField
-                control={form.control}
-                name="weekOfYear"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tuần trong năm</FormLabel>
-                    <FormControl>
-                      <Input type="number" min={1} max={53} {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-
-            {/* Số tiền mục tiêu */}
-            <FormField
-              control={form.control}
-              name="targetAmount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Số tiền mục tiêu</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min={0}
-                      step={1000}
-                      placeholder="Ví dụ: 10000000"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Ghim lên dashboard */}
-            <FormField
-              control={form.control}
-              name="isPinned"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center gap-2 space-y-0 pt-2">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onChange={(event) => field.onChange(event.target.checked)}
-                    />
-                  </FormControl>
-                  <FormLabel className="text-sm font-normal">
-                    Ghim kế hoạch này lên Dashboard
-                  </FormLabel>
-                </FormItem>
-              )}
-            />
-
-            <DialogFooter className="pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setOpen(false)}
+                      toast.success("Đã tạo kế hoạch chi tiêu", {
+                        id: "create-plan",
+                      });
+                      setOpen(false);
+                      spendingForm.reset();
+                      router.refresh();
+                    } catch (e: any) {
+                      toast.error(e?.message ?? "Tạo kế hoạch thất bại", {
+                        id: "create-plan",
+                      });
+                    }
+                  });
+                })}
               >
-                Hủy
-              </Button>
-              <Button type="submit" disabled={isPending}>
-                {isPending ? "Đang tạo..." : "Tạo kế hoạch"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+                <FormField
+                  control={spendingForm.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tên kế hoạch</FormLabel>
+                      <FormControl>
+                        <Input placeholder="VD: Chi tiêu tháng 12" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField
+                    control={spendingForm.control}
+                    name="periodType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Chu kỳ</FormLabel>
+                        <FormControl>
+                          <Select
+                            value={field.value}
+                            onValueChange={field.onChange}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Chọn chu kỳ" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="WEEKLY">Tuần</SelectItem>
+                              <SelectItem value="MONTHLY">Tháng</SelectItem>
+                              <SelectItem value="QUARTERLY">Quý</SelectItem>
+                              <SelectItem value="YEARLY">Năm</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={spendingForm.control}
+                    name="year"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Năm</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min={2000}
+                            max={2100}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* quarter / month / weekOfYear tương tự file cũ của m */}
+                {spendingForm.watch("periodType") === "QUARTERLY" && (
+                  <FormField
+                    control={spendingForm.control}
+                    name="quarter"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Quý</FormLabel>
+                        <FormControl>
+                          <Select
+                            value={field.value ? String(field.value) : ""}
+                            onValueChange={(v) => field.onChange(Number(v))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Chọn quý" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1">Quý 1</SelectItem>
+                              <SelectItem value="2">Quý 2</SelectItem>
+                              <SelectItem value="3">Quý 3</SelectItem>
+                              <SelectItem value="4">Quý 4</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {spendingForm.watch("periodType") === "MONTHLY" && (
+                  <FormField
+                    control={spendingForm.control}
+                    name="month"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tháng</FormLabel>
+                        <FormControl>
+                          <Input type="number" min={1} max={12} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {spendingForm.watch("periodType") === "WEEKLY" && (
+                  <FormField
+                    control={spendingForm.control}
+                    name="weekOfYear"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tuần trong năm</FormLabel>
+                        <FormControl>
+                          <Input type="number" min={1} max={53} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                <FormField
+                  control={spendingForm.control}
+                  name="targetAmount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Ngân sách</FormLabel>
+                      <FormControl>
+                        <Input type="number" min={0} step={1000} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={spendingForm.control}
+                  name="isPinned"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center gap-2 space-y-0 pt-1">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onChange={(e) =>
+                            field.onChange(e.currentTarget.checked)
+                          }
+                        />
+                      </FormControl>
+                      <FormLabel className="text-sm font-normal">
+                        Ghim lên Dashboard
+                      </FormLabel>
+                    </FormItem>
+                  )}
+                />
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setOpen(false)}
+                  >
+                    Hủy
+                  </Button>
+                  <Button type="submit" disabled={isPending}>
+                    {isPending ? "Đang tạo..." : "Tạo kế hoạch"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </TabsContent>
+
+          {/* TAB 2: TIẾT KIỆM */}
+          <TabsContent value="saving" className="mt-4">
+            <Form {...savingForm}>
+              <form
+                className="space-y-4"
+                onSubmit={savingForm.handleSubmit((values) => {
+                  startTransition(async () => {
+                    try {
+                      toast.loading("Đang tạo mục tiêu...", {
+                        id: "create-saving",
+                      });
+
+                      await createSavingGoal({
+                        userId,
+                        title: values.title,
+                        targetAmount: values.targetAmount,
+                        currentAmount: values.currentAmount ?? 0,
+                        targetDate: values.targetDate
+                          ? new Date(values.targetDate)
+                          : null,
+                        isPinned: values.isPinned,
+                      });
+
+                      toast.success("Đã tạo mục tiêu tiết kiệm", {
+                        id: "create-saving",
+                      });
+                      setOpen(false);
+                      savingForm.reset();
+                      router.refresh();
+                    } catch (e: any) {
+                      toast.error(e?.message ?? "Tạo mục tiêu thất bại", {
+                        id: "create-saving",
+                      });
+                    }
+                  });
+                })}
+              >
+                <FormField
+                  control={savingForm.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tên mục tiêu</FormLabel>
+                      <FormControl>
+                        <Input placeholder="VD: Mua nhà 2026" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField
+                    control={savingForm.control}
+                    name="targetAmount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Số tiền mục tiêu</FormLabel>
+                        <FormControl>
+                          <Input type="number" min={0} step={1000} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={savingForm.control}
+                    name="currentAmount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Đã có</FormLabel>
+                        <FormControl>
+                          <Input type="number" min={0} step={1000} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={savingForm.control}
+                  name="targetDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Ngày dự kiến đạt (tuỳ chọn)</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={savingForm.control}
+                  name="isPinned"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center gap-2 space-y-0 pt-1">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onChange={(e) =>
+                            field.onChange(e.currentTarget.checked)
+                          }
+                        />
+                      </FormControl>
+                      <FormLabel className="text-sm font-normal">
+                        Ghim lên Dashboard
+                      </FormLabel>
+                    </FormItem>
+                  )}
+                />
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setOpen(false)}
+                  >
+                    Hủy
+                  </Button>
+                  <Button type="submit" disabled={isPending}>
+                    {isPending ? "Đang tạo..." : "Tạo mục tiêu"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </TabsContent>
+
+          {/* TAB 3: VAY / NỢ */}
+          <TabsContent value="debt" className="mt-4">
+            <Form {...debtForm}>
+              <form
+                className="space-y-4"
+                onSubmit={debtForm.handleSubmit((values) => {
+                  startTransition(async () => {
+                    try {
+                      toast.loading("Đang tạo khoản vay/nợ...", {
+                        id: "create-debt",
+                      });
+
+                      await createDebtPlan({
+                        userId,
+                        title: values.title,
+                        category: values.category,
+                        amount: values.amount,
+                        notes: values.notes?.trim()
+                          ? values.notes.trim()
+                          : null,
+                        isPinned: values.isPinned,
+                      });
+
+                      toast.success("Đã tạo khoản vay/nợ", {
+                        id: "create-debt",
+                      });
+                      setOpen(false);
+                      debtForm.reset();
+                      router.refresh();
+                    } catch (e: any) {
+                      toast.error(e?.message ?? "Tạo khoản vay/nợ thất bại", {
+                        id: "create-debt",
+                      });
+                    }
+                  });
+                })}
+              >
+                <FormField
+                  control={debtForm.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tên khoản</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="VD: Vay bạn A / Cho bạn B vay"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={debtForm.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Loại</FormLabel>
+                      <FormControl>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Chọn loại" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="COLLECT">Thu nợ</SelectItem>
+                            <SelectItem value="BORROW">Đi vay</SelectItem>
+                            <SelectItem value="LEND">Cho vay</SelectItem>
+                            <SelectItem value="REPAY">Trả nợ</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={debtForm.control}
+                  name="amount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Số tiền</FormLabel>
+                      <FormControl>
+                        <Input type="number" min={0} step={1000} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={debtForm.control}
+                  name="isPinned"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center gap-2 space-y-0 pt-1">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onChange={(e) =>
+                            field.onChange(e.currentTarget.checked)
+                          }
+                        />
+                      </FormControl>
+                      <FormLabel className="text-sm font-normal">
+                        Ghim lên Dashboard
+                      </FormLabel>
+                    </FormItem>
+                  )}
+                />
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setOpen(false)}
+                  >
+                    Hủy
+                  </Button>
+                  <Button type="submit" disabled={isPending}>
+                    {isPending ? "Đang tạo..." : "Tạo khoản"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

@@ -125,3 +125,26 @@ export interface UserSubscriptionPlan extends SubscriptionPlan {
   isCanceled: boolean;
   isActive: boolean;
 }
+
+export type SavingGoalPlan = {
+  id: string;
+  title: string;
+  targetAmount: number;
+  currentAmount: number;
+  startDate: string;
+  targetDate: string | null;
+  pinned: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type DebtPlanItem = {
+  id: string;
+  title: string;
+  category: "COLLECT" | "BORROW" | "LEND" | "REPAY";
+  amount: number;
+  notes: string | null;
+  pinned: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
