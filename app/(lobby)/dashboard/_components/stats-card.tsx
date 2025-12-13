@@ -28,7 +28,7 @@ function StatsCards({ from, to, userSettings }: Props) {
     return GetFormatterForCurrency(userSettings.currency)
   }, [userSettings.currency])
 
-  const income = statsQuery.data?.income || 0
+  const income = userSettings.monthlyBudget ?? 0
   const expense = statsQuery.data?.expense || 0
   const balance = income - expense
 

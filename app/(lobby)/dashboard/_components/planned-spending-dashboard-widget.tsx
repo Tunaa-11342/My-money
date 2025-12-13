@@ -1,203 +1,285 @@
-// app/(lobby)/dashboard/_components/planned-spending-dashboard-widget.tsx
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, ChevronRight, Pin } from "lucide-react";
+import {
+  AlertCircle,
+  Pin,
+  Wallet,
+  PiggyBank,
+  HandCoins,
+  CheckCircle2,
+  ArrowUpRight,
+} from "lucide-react";
 
 import SkeletonWrapper from "@/components/skeletons/wrapper-skeleton";
-import { getPinnedPlansForDashboard } from "@/lib/actions/planned-spending";
 import { cn, GetFormatterForCurrency } from "@/lib/utils";
-import type { SpendingPlan } from "@/types";
+
+import { getPinnedPlansForDashboard } from "@/lib/actions/planned-spending";
+import { getUserSavingGoals } from "@/lib/actions/saving-goals";
+import { getUserDebtPlans } from "@/lib/actions/debts";
+
 import type { UserSettings } from "@prisma/client";
 
-interface PlannedSpendingDashboardWidgetProps {
-  userSettings: UserSettings;
+type Kind = "spending" | "saving" | "debt";
+
+type PinnedItem = {
+  kind: Kind;
+  id: string;
+  title: string;
+
+  // Right side (very compact)
+  pill: string; // e.g. "72%" or "Thu nợ"
+  right: string; // e.g. "1.2m / 3m" or "12m"
+  done?: boolean;
+
+  // For subtle progress fill (only if percent-based)
+  percent?: number;
+
+  // Sorting
+  createdAt?: string | null;
+};
+
+function debtCategoryLabel(c: any) {
+  switch (c) {
+    case "COLLECT":
+      return "Thu nợ";
+    case "BORROW":
+      return "Đi vay";
+    case "LEND":
+      return "Cho vay";
+    case "REPAY":
+      return "Trả nợ";
+    default:
+      return "Vay/Nợ";
+  }
 }
 
-/**
- * Format cực gọn kiểu VN:
- *  - 1_200 -> 1,2k
- *  - 1_200_000 -> 1,2tr
- *  - 1_200_000_000 -> 1,2tỷ
- */
-function formatCompactVND(value: number) {
-  const abs = Math.abs(value);
-  const sign = value < 0 ? "-" : "";
-
-  const to1 = (n: number) =>
-    n
-      .toFixed(1)
-      .replace(/\.0$/, "")
-      .replace(".", ",");
-
-  if (abs >= 1_000_000_000) return `${sign}${to1(abs / 1_000_000_000)}tỷ`;
-  if (abs >= 1_000_000) return `${sign}${to1(abs / 1_000_000)}tr`;
-  if (abs >= 1_000) return `${sign}${to1(abs / 1_000)}k`;
-  return `${sign}${abs.toLocaleString("vi-VN")}`;
+function kindMeta(kind: Kind) {
+  if (kind === "spending") return { icon: Wallet, chip: "Chi tiêu" };
+  if (kind === "saving") return { icon: PiggyBank, chip: "Tiết kiệm" };
+  return { icon: HandCoins, chip: "Vay/Nợ" };
 }
 
-function formatMoneyShort(
-  value: number,
-  currency: string,
-  fullFormatter: Intl.NumberFormat
-) {
-  if (currency === "VND") return formatCompactVND(value);
-
-  // fallback: để chính xác, vẫn dùng formatter chuẩn currency
-  // (ít gọn hơn nhưng an toàn cho currency khác)
-  return fullFormatter.format(value);
+function clampPercent(n: number) {
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.min(100, n));
 }
 
-function PinnedPlanRow({
-  plan,
-  currency,
-  formatter,
+function shortMoney(n: number) {
+  // giữ gọn trên 1 dòng: 1,200,000 -> 1.2m (VND thường dùng)
+  const abs = Math.abs(n);
+  if (abs >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)}b`;
+  if (abs >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}m`;
+  if (abs >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
+  return `${n}`;
+}
+
+function Row({
+  item,
 }: {
-  plan: SpendingPlan;
-  currency: string;
-  formatter: Intl.NumberFormat;
+  item: PinnedItem;
 }) {
-  const raw = Number.isFinite(plan.progressPercent) ? plan.progressPercent : 0;
-  const percent = Math.max(0, Math.round(raw));
-  const fill = Math.max(0, Math.min(100, raw));
-  const isOver = percent > 100;
+  const { icon: Icon } = kindMeta(item.kind);
 
-  const spent = plan.actualSpending ?? 0;
-  const total = plan.totalBudget ?? 0;
-
-  const pillCls = isOver
-    ? "bg-rose-500/15 text-rose-500 border-rose-500/25"
-    : "bg-indigo-500/15 text-indigo-500 border-indigo-500/25";
-
-  const fillCls = isOver ? "bg-rose-500/10" : "bg-indigo-500/10";
-
-  const right =
-    currency === "VND"
-      ? `${formatMoneyShort(spent, currency, formatter)}/${formatMoneyShort(
-          total,
-          currency,
-          formatter
-        )}`
-      : `${formatter.format(spent)} / ${formatter.format(total)}`;
+  const percent = item.percent == null ? undefined : clampPercent(item.percent);
+  const showFill = typeof percent === "number";
 
   return (
-    <div
-      className={cn(
-        "group relative z-0 overflow-hidden rounded-xl border border-white/10 bg-background/40 px-3 py-2",
-        "transition-colors hover:bg-background/60",
-        isOver ? "hover:border-rose-200/25" : "hover:border-indigo-200/25"
+    <div className="group relative overflow-hidden rounded-lg border bg-muted/20 px-3 py-2 transition hover:bg-muted/30">
+      {/* subtle progress fill (only for spending/saving) */}
+      {showFill && (
+        <div
+          className="pointer-events-none absolute inset-y-0 left-0 bg-primary/10"
+          style={{ width: `${percent}%` }}
+        />
       )}
-      title={`${formatter.format(spent)} / ${formatter.format(total)}`}
-    >
-      {/* progress fill nền mờ (đẹp nhưng vẫn 1 dòng) */}
-      <div className="absolute inset-0 -z-10">
-        <div className={cn("h-full", fillCls)} style={{ width: `${fill}%` }} />
-      </div>
 
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <div className="truncate text-sm font-semibold leading-tight">
-            {plan.name}
+      <div className="relative flex items-center gap-3">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border bg-background/40">
+          <Icon className="h-4 w-4 text-muted-foreground" />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-medium leading-tight">
+            {item.title}
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2 whitespace-nowrap">
-          <span
-            className={cn(
-              "rounded-full border px-2 py-0.5 text-[11px] font-semibold tabular-nums",
-              pillCls
-            )}
-          >
-            {percent}%
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="rounded-md border bg-background/40 px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+            {item.pill}
           </span>
 
-          <span className="text-[11px] text-muted-foreground tabular-nums">
-            {right}
+          <span className="hidden sm:inline text-xs text-muted-foreground tabular-nums">
+            {item.right}
           </span>
+
+          {item.done ? (
+            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+          ) : (
+            <span className="h-4 w-4" />
+          )}
         </div>
       </div>
     </div>
   );
+}
+
+interface PlannedSpendingDashboardWidgetProps {
+  userSettings: UserSettings;
 }
 
 export function PlannedSpendingDashboardWidget({
   userSettings,
 }: PlannedSpendingDashboardWidgetProps) {
   const userId = userSettings.userId;
-  const currency = userSettings.currency ?? "VND";
+  const fmt = GetFormatterForCurrency(userSettings.currency);
 
-  const formatter = React.useMemo(
-    () => GetFormatterForCurrency(currency),
-    [currency]
-  );
-
-  const { data, isFetching } = useQuery<SpendingPlan[]>({
-    queryKey: ["dashboard", "pinnedPlans", userId],
+  // 1) Chi tiêu (đúng logic hiện tại: chỉ show tuần/tháng hiện tại)
+  const spendingQ = useQuery({
+    queryKey: ["dashboard", "pinnedPlans", userId, "spending"],
     queryFn: () => getPinnedPlansForDashboard(userId),
   });
 
-  const plans = data ?? [];
+  // 2) Tiết kiệm (lọc pinned ở client để khỏi phải thêm server action mới)
+  const savingQ = useQuery({
+    queryKey: ["dashboard", "pinnedPlans", userId, "saving"],
+    queryFn: async () => {
+      const all = await getUserSavingGoals(userId);
+      return (all ?? []).filter((x: any) => !!x.pinned);
+    },
+  });
+
+  // 3) Vay/Nợ
+  const debtQ = useQuery({
+    queryKey: ["dashboard", "pinnedPlans", userId, "debt"],
+    queryFn: async () => {
+      const all = await getUserDebtPlans(userId);
+      return (all ?? []).filter((x: any) => !!x.pinned);
+    },
+  });
+
+  const isFetching = spendingQ.isFetching || savingQ.isFetching || debtQ.isFetching;
+
+  const items: PinnedItem[] = useMemo(() => {
+    const spending = (spendingQ.data ?? []).map((p: any) => {
+      const percent = clampPercent(p.progressPercent ?? 0);
+      const done = percent >= 100;
+
+      // gọn: 1.0m / 3.0m
+      const right = `${shortMoney(p.actualSpending ?? 0)} / ${shortMoney(p.totalBudget ?? 0)}`;
+
+      return {
+        kind: "spending" as const,
+        id: p.id,
+        title: p.name,
+        pill: `${Math.round(percent)}%`,
+        right,
+        done,
+        percent,
+        createdAt: p.createdAt ?? null,
+      };
+    });
+
+    const saving = (savingQ.data ?? []).map((g: any) => {
+      const percent =
+        g.targetAmount && g.targetAmount > 0
+          ? (g.currentAmount / g.targetAmount) * 100
+          : 0;
+
+      const pct = clampPercent(percent);
+      const done = pct >= 100;
+
+      const right = `${shortMoney(g.currentAmount ?? 0)} / ${shortMoney(g.targetAmount ?? 0)}`;
+
+      return {
+        kind: "saving" as const,
+        id: g.id,
+        title: g.title,
+        pill: `${Math.round(pct)}%`,
+        right,
+        done,
+        percent: pct,
+        createdAt: g.createdAt ?? null,
+      };
+    });
+
+    const debt = (debtQ.data ?? []).map((d: any) => {
+      const right = shortMoney(d.amount ?? 0);
+      return {
+        kind: "debt" as const,
+        id: d.id,
+        title: d.title,
+        pill: debtCategoryLabel(d.category),
+        right,
+        done: false,
+        createdAt: d.createdAt ?? null,
+      };
+    });
+
+    // Sort: newest first (fallback order keeps spending/saving/debt stable)
+    const merged = [...spending, ...saving, ...debt].sort((a, b) => {
+      const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return tb - ta;
+    });
+
+    // giữ gọn widget
+    return merged.slice(0, 8);
+  }, [spendingQ.data, savingQ.data, debtQ.data]);
 
   return (
-    <div className="rounded-2xl border border-dashed border-indigo-200/40 bg-gradient-to-br from-indigo-500/5 to-violet-500/5 p-4">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-background/40">
-            <Pin className="h-4 w-4 text-indigo-500" />
+    <SkeletonWrapper isLoading={isFetching}>
+      <div className="rounded-xl border bg-card p-4 shadow-sm">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg border bg-muted/30">
+              <Pin className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div className="min-w-0">
+              <div className="truncate font-semibold">Kế hoạch đang ghim</div>
+              <div className="text-xs text-muted-foreground">
+                Hiển thị nhanh các mục quan trọng.
+              </div>
+            </div>
           </div>
-
-          <h3 className="truncate text-sm font-semibold">Kế hoạch đang ghim</h3>
-
-          {plans.length > 0 && (
-            <span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-[11px] font-medium text-indigo-300">
-              {plans.length}
-            </span>
-          )}
-        </div>
-
-        <div className="flex shrink-0 items-center gap-2">
-          <span
-            className="hidden text-xs text-muted-foreground sm:inline"
-            title="Tuần / Tháng / Quý / Năm hiện tại"
-          >
-            Kỳ hiện tại
-          </span>
 
           <Link
             href="/plans"
-            className="group inline-flex items-center gap-1 rounded-lg border border-white/10 bg-background/40 px-2 py-1 text-xs text-muted-foreground transition hover:bg-background/60 hover:text-foreground"
+            className={cn(
+              "group inline-flex items-center gap-1 rounded-lg border bg-background/40 px-2 py-1 text-xs",
+              "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+            )}
           >
-            Xem
-            <ChevronRight className="h-4 w-4 opacity-60 transition group-hover:opacity-100" />
+            Quản lý <ArrowUpRight className="h-3.5 w-3.5" />
           </Link>
         </div>
-      </div>
 
-      <SkeletonWrapper isLoading={isFetching}>
-        {plans.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-xl bg-card/40 p-6 text-center text-sm text-muted-foreground">
-            <AlertCircle className="mb-2 h-5 w-5 text-indigo-400" />
-            <p>Chưa có kế hoạch nào được ghim cho kỳ hiện tại.</p>
-            <p className="mt-1 text-xs">
-              Vào tab <span className="font-semibold">Kế hoạch</span> để ghim các
-              kế hoạch quan trọng.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {plans.map((plan) => (
-              <PinnedPlanRow
-                key={plan.id}
-                plan={plan}
-                currency={currency}
-                formatter={formatter}
-              />
-            ))}
-          </div>
-        )}
-      </SkeletonWrapper>
-    </div>
+        <div className="mt-4 space-y-2">
+          {items.length === 0 ? (
+            <div className="rounded-lg border border-dashed p-4 text-center">
+              <AlertCircle className="mx-auto h-5 w-5 text-muted-foreground" />
+              <div className="mt-2 text-sm font-medium">
+                Chưa có kế hoạch nào được ghim
+              </div>
+              <div className="mt-1 text-xs text-muted-foreground">
+                Vào tab Kế hoạch để ghim mục tiêu bạn muốn theo dõi.
+              </div>
+            </div>
+          ) : (
+            items.map((it) => <Row key={`${it.kind}-${it.id}`} item={it} />)
+          )}
+
+          {/* hint tiền tệ (nhỏ thôi, không phá layout) */}
+          {items.length > 0 && (
+            <div className="pt-1 text-[11px] text-muted-foreground">
+              Đơn vị: {userSettings.currency} • Ví dụ hiển thị: {fmt.format(1_000_000)}
+            </div>
+          )}
+        </div>
+      </div>
+    </SkeletonWrapper>
   );
 }

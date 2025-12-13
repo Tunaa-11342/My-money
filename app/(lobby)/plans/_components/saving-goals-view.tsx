@@ -21,8 +21,10 @@ export function SavingGoalsView({ userId }: { userId: string }) {
   const pinMut = useMutation({
     mutationFn: ({ id, pinned }: { id: string; pinned: boolean }) =>
       toggleSavingGoalPinned(userId, id, pinned),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ["saving-goals", userId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["saving-goals", userId] });
+      qc.invalidateQueries({ queryKey: ["dashboard", "pinnedPlans", userId] });
+    },
     onError: (e: any) => toast.error(e?.message ?? "Không ghim được"),
   });
 
@@ -31,6 +33,7 @@ export function SavingGoalsView({ userId }: { userId: string }) {
     onSuccess: () => {
       toast.success("Đã xóa mục tiêu");
       qc.invalidateQueries({ queryKey: ["saving-goals", userId] });
+      qc.invalidateQueries({ queryKey: ["dashboard", "pinnedPlans", userId] });
     },
     onError: (e: any) => toast.error(e?.message ?? "Xóa thất bại"),
   });

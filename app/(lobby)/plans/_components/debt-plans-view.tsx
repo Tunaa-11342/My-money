@@ -23,7 +23,10 @@ export function DebtPlansView({ userId }: { userId: string }) {
   const pinMut = useMutation({
     mutationFn: async ({ id, pinned }: { id: string; pinned: boolean }) =>
       toggleDebtPlanPinned(userId, id, pinned),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["debt-plans", userId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["debt-plans", userId] });
+      qc.invalidateQueries({ queryKey: ["dashboard", "pinnedPlans", userId] });
+    },
     onError: (e: any) => toast.error(e?.message ?? "Không ghim được"),
   });
 
@@ -32,6 +35,7 @@ export function DebtPlansView({ userId }: { userId: string }) {
     onSuccess: () => {
       toast.success("Đã xóa khoản vay/nợ");
       qc.invalidateQueries({ queryKey: ["debt-plans", userId] });
+      qc.invalidateQueries({ queryKey: ["dashboard", "pinnedPlans", userId] });
     },
     onError: (e: any) => toast.error(e?.message ?? "Xóa thất bại"),
   });
