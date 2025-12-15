@@ -19,6 +19,7 @@ model User {
   plannedSpendings PlannedSpending[]
   savingGoals      SavingGoal[]
   debtPlans        DebtPlan[]    
+  recurringCashflowItem RecurringCashflowItem[]
 }
 
 model UserSettings {
@@ -205,4 +206,27 @@ model DebtPlan {
   @@index([userId])
   @@index([userId, category])
   @@index([userId, isPinned])
+}
+
+model RecurringCashflowItem {
+  id         String   @id @default(cuid())
+  userId     String
+
+  kind       String
+  title      String
+  amount     Decimal  @db.Decimal(18, 2)
+  periodType String
+  dayOfMonth Int?   
+  startDate  DateTime?
+  endDate    DateTime?
+
+  isActive   Boolean  @default(true)
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, kind])
 }
