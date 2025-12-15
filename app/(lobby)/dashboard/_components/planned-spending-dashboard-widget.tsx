@@ -29,12 +29,10 @@ type PinnedItem = {
   id: string;
   title: string;
 
-  // Right side (very compact)
   pill: string; // e.g. "72%" or "Thu nợ"
   right: string; // e.g. "1.2m / 3m" or "12m"
   done?: boolean;
 
-  // For subtle progress fill (only if percent-based)
   percent?: number;
 
   // Sorting
@@ -68,7 +66,6 @@ function clampPercent(n: number) {
 }
 
 function shortMoney(n: number) {
-  // giữ gọn trên 1 dòng: 1,200,000 -> 1.2m (VND thường dùng)
   const abs = Math.abs(n);
   if (abs >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)}b`;
   if (abs >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}m`;
@@ -88,7 +85,6 @@ function Row({
 
   return (
     <div className="group relative overflow-hidden rounded-lg border bg-muted/20 px-3 py-2 transition hover:bg-muted/30">
-      {/* subtle progress fill (only for spending/saving) */}
       {showFill && (
         <div
           className="pointer-events-none absolute inset-y-0 left-0 bg-primary/10"
@@ -137,13 +133,11 @@ export function PlannedSpendingDashboardWidget({
   const userId = userSettings.userId;
   const fmt = GetFormatterForCurrency(userSettings.currency);
 
-  // 1) Chi tiêu (đúng logic hiện tại: chỉ show tuần/tháng hiện tại)
   const spendingQ = useQuery({
     queryKey: ["dashboard", "pinnedPlans", userId, "spending"],
     queryFn: () => getPinnedPlansForDashboard(userId),
   });
 
-  // 2) Tiết kiệm (lọc pinned ở client để khỏi phải thêm server action mới)
   const savingQ = useQuery({
     queryKey: ["dashboard", "pinnedPlans", userId, "saving"],
     queryFn: async () => {
@@ -152,7 +146,6 @@ export function PlannedSpendingDashboardWidget({
     },
   });
 
-  // 3) Vay/Nợ
   const debtQ = useQuery({
     queryKey: ["dashboard", "pinnedPlans", userId, "debt"],
     queryFn: async () => {
@@ -168,7 +161,6 @@ export function PlannedSpendingDashboardWidget({
       const percent = clampPercent(p.progressPercent ?? 0);
       const done = percent >= 100;
 
-      // gọn: 1.0m / 3.0m
       const right = `${shortMoney(p.actualSpending ?? 0)} / ${shortMoney(p.totalBudget ?? 0)}`;
 
       return {
@@ -219,14 +211,12 @@ export function PlannedSpendingDashboardWidget({
       };
     });
 
-    // Sort: newest first (fallback order keeps spending/saving/debt stable)
     const merged = [...spending, ...saving, ...debt].sort((a, b) => {
       const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return tb - ta;
     });
 
-    // giữ gọn widget
     return merged.slice(0, 8);
   }, [spendingQ.data, savingQ.data, debtQ.data]);
 

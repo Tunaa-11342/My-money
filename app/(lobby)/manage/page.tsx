@@ -45,8 +45,6 @@ async function ManagePage() {
             <CurrencyComboBox userId={user.id} />
           </CardContent>
         </Card>
-
-        {/* Cashflow replaces BudgetSetting */}
         {userSettings ? (
           <CashflowSetting
             userId={user.id}
@@ -54,8 +52,6 @@ async function ManagePage() {
             currency={userSettings?.currency ?? "VND"}
           />
         ) : null}
-
-        {/* Categories */}
         <CategoryList userId={user.id} type="income" />
         <CategoryList userId={user.id} type="expense" />
       </div>

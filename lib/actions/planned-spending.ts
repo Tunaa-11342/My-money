@@ -1,14 +1,9 @@
-// lib/actions/planned-spending.ts
 "use server";
 
 import { db } from "@/lib/db";
 import { PlannedPeriodType } from "@prisma/client";
 import type { SpendingPlan, PlanTimeScale, PlanStatus } from "@/types";
 import { getISOWeek } from "date-fns";
-
-/**
- * Map enum Prisma -> PlanTimeScale UI
- */
 function mapPeriodTypeToTimeScale(type: PlannedPeriodType): PlanTimeScale {
   switch (type) {
     case "YEARLY":
@@ -24,15 +19,6 @@ function mapPeriodTypeToTimeScale(type: PlannedPeriodType): PlanTimeScale {
   }
 }
 
-/**
- * Parse periodType + periodKey -> khoảng thời gian + year/quater/month/weekOfYear
- *
- * periodKey convention (m đang dùng):
- * - YEARLY:    "2025"
- * - QUARTERLY: "2025-Q1"
- * - MONTHLY:   "2025-01"
- * - WEEKLY:    "2025-W03"
- */
 function getPeriodInfo(periodType: PlannedPeriodType, periodKey: string) {
   let year = 0;
   let quarter: 1 | 2 | 3 | 4 | undefined;
@@ -119,26 +105,19 @@ function computeStatus(
 
   if (now < start) return "upcoming";
   if (now > end) {
-    // m có thể chỉnh rule: nếu quá hạn mà < 100% thì "expired", còn >=100% thì "completed"
     if (progressPercent >= 100) return "completed";
     return "expired";
   }
   return "active";
 }
 
-/**
- * Lấy toàn bộ PlannedSpending cho user, map sang SpendingPlan (đúng type index.ts)
- *
- * NOTE: phần aggregate transaction m để TODO, vì schema transaction cụ thể của m
- *       có thể khác (tên bảng, field type,...). M chỉ cần sửa đoạn where cho khớp.
- */
 export async function getUserSpendingPlans(
   userId: string
 ): Promise<SpendingPlan[]> {
   const rows = await db.plannedSpending.findMany({
     where: { userId },
     include: {
-      category: true, // nếu m không cần thì bỏ
+      category: true,
     },
     orderBy: { createdAt: "desc" },
   });
@@ -150,21 +129,13 @@ export async function getUserSpendingPlans(
   for (const row of rows) {
     const info = getPeriodInfo(row.periodType, row.periodKey);
 
-    // Mặc định: kế hoạch chi tiêu bình thường, tính theo full period
     let rangeStart = info.start;
-
-    // YEARLY ở TƯƠNG LAI → coi như KẾ HOẠCH DÀI HẠN / MỤC TIÊU
-    // ví dụ: kế hoạch năm 2026 được tạo từ 2024 → tính từ ngày tạo đến hết 2026
     if (row.periodType === "YEARLY" && info.year > currentYear) {
       rangeStart = row.createdAt;
     }
-
-    // TODO: SỬA CHO KHỚP VỚI SCHEMA transaction CỦA M
-    // ví dụ nếu m có model Transaction với fields: userId, type, date, categoryId, amount,...
     const txAgg = await db.transaction.aggregate({
       where: {
         userId,
-        // nếu m có enum khác thì sửa phần này
         type: "expense",
         date: {
           gte: rangeStart,
@@ -183,7 +154,6 @@ export async function getUserSpendingPlans(
     const status = computeStatus(rangeStart, info.end, progressPercent);
     const timeScale = mapPeriodTypeToTimeScale(row.periodType);
 
-    // categories: m đang để string[], t map đơn giản = [categoryId] nếu có
     const categories: string[] = row.categoryId ? [row.categoryId] : [];
 
     const plan: SpendingPlan = {
@@ -193,9 +163,6 @@ export async function getUserSpendingPlans(
       description: undefined,
 
       timeScale,
-      // Start date hiển thị đúng khoảng thời gian thực tế:
-      // - Kế hoạch chi tiêu: đầu kỳ
-      // - Kế hoạch mục tiêu dài hạn: ngày tạo
       startDate: rangeStart.toISOString(),
       endDate: info.end.toISOString(),
 
@@ -227,9 +194,6 @@ export async function getUserSpendingPlans(
   return plans;
 }
 
-/**
- * Ghim / bỏ ghim plan
- */
 export async function togglePlanPinned(
   userId: string,
   planId: string,
@@ -289,9 +253,6 @@ export interface CreatePlannedSpendingInput {
   isPinned?: boolean;
 }
 
-/**
- * Tạo kế hoạch chi tiêu mới từ form CreatePlanDialog
- */
 export async function createPlannedSpending(input: CreatePlannedSpendingInput) {
   const periodKey = buildPeriodKey(input);
 
@@ -337,10 +298,6 @@ export async function getPinnedPlansForDashboard(
         plan.period.weekOfYear === currentWeek
       );
     }
-
-    // Nếu muốn cho cả year/quarter cũng xuất hiện trên dashboard
-    // thì bỏ comment các đoạn bên dưới
-
     if (plan.timeScale === "year") {
       return plan.period.year === currentYear;
     }

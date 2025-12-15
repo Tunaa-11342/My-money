@@ -126,8 +126,6 @@ return (
         </AlertDialog>
       </div>
     </div>
-
-    {/* Metrics – cùng form với Chi tiêu / Tiết kiệm */}
     <div className="grid grid-cols-3 gap-2 text-xs">
       <div>
         <p className="text-muted-foreground">Số tiền</p>
@@ -143,7 +141,7 @@ return (
       </div>
     </div>
 
-    {/* Progress giả lập theo form (không thêm logic mới) */}
+
     <div className="space-y-1">
       <div className="flex items-center justify-between text-xs">
         <span className="text-muted-foreground">Tiến độ</span>
@@ -154,7 +152,7 @@ return (
       </div>
     </div>
 
-    {/* Footer đơn giản, không thêm biến */}
+    {/* Footer */}
     <div className="flex items-center justify-between text-xs text-muted-foreground">
       <span>Khoản vay / nợ</span>
       <span>{fmt(plan.amount)} ₫</span>

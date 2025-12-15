@@ -113,7 +113,6 @@ return (
       </div>
     </div>
 
-    {/* Metrics – đúng form Chi tiêu */}
     <div className="grid grid-cols-3 gap-2 text-xs">
       <div>
         <p className="text-muted-foreground">Mục tiêu</p>
@@ -129,7 +128,7 @@ return (
       </div>
     </div>
 
-    {/* Progress – custom bar giống Chi tiêu */}
+    {/* Progress */}
     <div className="space-y-1">
       <div className="flex items-center justify-between text-xs">
         <span className="text-muted-foreground">Tiến độ</span>
@@ -143,7 +142,7 @@ return (
       </div>
     </div>
 
-    {/* Footer đơn giản, không thêm logic mới */}
+    {/* Footer */}
     <div className="flex items-center justify-between text-xs text-muted-foreground">
       <span>Mục tiêu tiết kiệm</span>
       <span>Còn {fmt(remaining)} ₫</span>

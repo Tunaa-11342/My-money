@@ -44,13 +44,6 @@ export default function IndexPage() {
             className="animate-fade-up flex flex-wrap items-center justify-center gap-4 mt-4"
             style={{ animationDelay: "0.4s", animationFillMode: "both" }}
           >
-            {/* <Button asChild size="lg" className="px-6 py-5 text-base">
-              <Link href="/wizard">
-                Bắt đầu ngay
-                <span className="sr-only">go to wizard</span>
-              </Link>
-            </Button> */}
-
             <Button
               asChild
               variant="outline"
@@ -68,7 +61,7 @@ export default function IndexPage() {
             className="animate-fade-up mt-8 text-sm text-muted-foreground"
             style={{ animationDelay: "0.5s", animationFillMode: "both" }}
           >
-            💡 Gợi ý: Hãy tạo nhóm để cùng quản lý chi tiêu với bạn bè hoặc gia
+              Gợi ý: Hãy tạo nhóm để cùng quản lý chi tiêu với bạn bè hoặc gia
             đình!
           </p>
         </section>

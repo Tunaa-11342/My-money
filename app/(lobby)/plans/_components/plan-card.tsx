@@ -58,7 +58,6 @@ export function PlanCard({ userId, plan, onTogglePin }: PlanCardProps) {
   const left = daysLeft(plan.endDate);
   const isExpiringSoon = left >= 0 && left <= 7;
 
-  // Nhận diện “kế hoạch mục tiêu dài hạn”
   const now = new Date();
   const currentYear = now.getFullYear();
   const isFutureYearGoal = plan.timeScale === "year" && plan.period.year > currentYear;
@@ -70,15 +69,10 @@ export function PlanCard({ userId, plan, onTogglePin }: PlanCardProps) {
   const handleDelete = async () => {
     try {
       toast.loading("Đang xóa kế hoạch...", { id: plan.id });
-
       await deletePlannedSpending(userId, plan.id);
-
       toast.success("Đã xóa kế hoạch", { id: plan.id });
       setOpenDelete(false);
-
-      // invalidate đúng queryKey mà PlansView đang dùng
       await queryClient.invalidateQueries({ queryKey: ["spending-plans", userId] });
-      // và widget dashboard nếu cần (nếu m đang show pinned)
       await queryClient.invalidateQueries({ queryKey: ["dashboard", "pinnedPlans", userId] });
     } catch (e: any) {
       toast.error(e?.message ?? "Không xóa được kế hoạch", { id: plan.id });
@@ -91,8 +85,6 @@ return (
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           <h3 className="font-semibold leading-tight line-clamp-1">{plan.name}</h3>
-
-          {/* Badge "Ghim" khi đã ghim */}
           {plan.pinned && <Badge>Ghim</Badge>}
         </div>
 
@@ -106,7 +98,7 @@ return (
       </div>
 
       <div className="flex items-center gap-2">
-        {/* More actions */}
+        {/* actions */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-7 w-7">
@@ -136,7 +128,7 @@ return (
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Confirm delete (đặt ngoài DropdownMenu cho sạch structure) */}
+        {/* Confirm delete */}
         <AlertDialog open={openDelete} onOpenChange={setOpenDelete}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -159,7 +151,7 @@ return (
       </div>
     </div>
 
-    {/* Body giữ nguyên */}
+    {/* Body */}
     <div className="grid grid-cols-3 gap-2 text-xs">
       <div>
         <p className="text-muted-foreground">Ngân sách</p>

@@ -190,7 +190,6 @@ export default async function GroupDetailPage({
                    bg-gradient-to-br from-background via-background/70 to-indigo-500/5 
                    hover:shadow-lg hover:border-indigo-400/40 transition-all duration-300 overflow-hidden"
                       >
-                        {/* Hiệu ứng nền mờ khi hover */}
                         <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl" />
 
                         {/* Nội dung chính */}
@@ -239,7 +238,6 @@ export default async function GroupDetailPage({
           )}
           {currentView === "report" && (
             <div className="relative overflow-hidden rounded-2xl border border-white/10 shadow-2xl bg-background/50 backdrop-blur-2xl">
-              {/* Hiệu ứng nền gradient động */}
               <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 via-purple-500/10 to-pink-500/20 blur-3xl animate-pulse-slow" />
 
               <div className="relative z-10 p-8 space-y-8">

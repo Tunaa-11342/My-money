@@ -14,13 +14,8 @@ interface LobyLayoutProps {
 }
 
 export default async function LobyLayout({ children, modal }: LobyLayoutProps) {
-  // 1) Đồng bộ user vào DB (nếu chưa có)
   await syncCurrentUser()
-
-  // 2) Lấy thông tin user từ Clerk cache
   const user = await getCachedUser()
-
-  // 3) Lấy user settings (currency, budget, theme…)
   const userSettings = user
     ? await getCreateUserSetting(user.id)
     : null
@@ -28,13 +23,9 @@ export default async function LobyLayout({ children, modal }: LobyLayoutProps) {
   return (
     <div className="relative flex min-h-screen flex-col">
       <SiteHeader user={user} userSettings={userSettings} />
-
       <main className="flex-1">
         {children}
-        {/* {modal} */}
       </main>
-
-      {/* <SiteFooter /> */}
     </div>
   )
 }

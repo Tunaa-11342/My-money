@@ -10,7 +10,7 @@ export default async function PlansPage() {
     <div className="container space-y-6 py-10">
 
 
-      {/* Main content */}
+      {/* Main */}
       <PlansHub userId={user.id} />
     </div>
   );

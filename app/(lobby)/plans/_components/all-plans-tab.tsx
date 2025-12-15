@@ -1,4 +1,3 @@
-// app/(lobby)/plans/_components/all-plans-tab.tsx
 "use client";
 
 import type { SpendingPlan } from "@/types";
@@ -14,7 +13,6 @@ export function AllPlansTab({
   onTogglePin: (planId: string, pinned: boolean) => void;
 }) {
   const sorted = [...plans].sort((a, b) => {
-    // sort newest first
     if (a.period.year !== b.period.year) return b.period.year - a.period.year;
     const aMonth = a.period.month ?? 0;
     const bMonth = b.period.month ?? 0;
