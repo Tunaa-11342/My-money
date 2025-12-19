@@ -123,16 +123,19 @@ export async function getUserSpendingPlans(
   });
 
   const plans: SpendingPlan[] = [];
-  const now = new Date();
-  const currentYear = now.getUTCFullYear();
 
   for (const row of rows) {
     const info = getPeriodInfo(row.periodType, row.periodKey);
 
-    let rangeStart = info.start;
-    if (row.periodType === "YEARLY" && info.year > currentYear) {
-      rangeStart = row.createdAt;
-    }
+    // ✅ Luôn tính trong đúng khoảng thời gian của kế hoạch
+    // (không lấy từ createdAt cho YEARLY tương lai — sẽ bị tính sai)
+    const rangeStart = info.start;
+
+    // ❗ Transaction không có categoryId trong schema hiện tại,
+    // nên filter theo categoryId là sai.
+    // Tạm thời filter theo tên category đang lưu trong Transaction.category
+    const categoryName = row.category?.name;
+
     const txAgg = await db.transaction.aggregate({
       where: {
         userId,
@@ -141,7 +144,7 @@ export async function getUserSpendingPlans(
           gte: rangeStart,
           lte: info.end,
         },
-        ...(row.categoryId && { categoryId: row.categoryId }),
+        ...(categoryName ? { category: categoryName } : {}),
       },
       _sum: { amount: true },
     });
@@ -193,6 +196,7 @@ export async function getUserSpendingPlans(
 
   return plans;
 }
+
 
 export async function togglePlanPinned(
   userId: string,

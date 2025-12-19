@@ -5,7 +5,6 @@ export async function syncCurrentUser() {
   const user = await currentUser();
   if (!user) return null;
 
-  // 1. Sync User table
   const existingUser = await prisma.user.findFirst({
     where: {
       OR: [{ id: user.id }, { email: user.emailAddresses[0]?.emailAddress }],
@@ -22,7 +21,6 @@ export async function syncCurrentUser() {
       },
     });
   } else {
-    // Nếu id không khớp thì update
     if (existingUser.id !== user.id) {
       await prisma.user.update({
         where: { email: existingUser.email },
@@ -33,7 +31,6 @@ export async function syncCurrentUser() {
     }
   }
 
-  // 2. Sync UserSettings
   let settings = await prisma.userSettings.findUnique({
     where: { userId: user.id },
   });
@@ -48,7 +45,6 @@ export async function syncCurrentUser() {
     });
   }
 
-  // 3. Sync default categories
   const categoryCount = await prisma.category.count({
     where: { userId: user.id },
   });

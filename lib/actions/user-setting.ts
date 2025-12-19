@@ -39,11 +39,11 @@ export async function getUserSetting(userId: string) {
 export async function createUserSetting(userId: string) {
   return db.userSettings.create({
     data: {
-      userId: userId,
-      currency: 'USD',
+      userId,
+      currency: "VND",
       monthlyBudget: 0,
     },
-  })
+  });
 }
 
 export async function getCreateUserSetting(userId: string) {
@@ -79,33 +79,37 @@ export async function updateUserBudget(userId: string, monthlyBudget: number) {
 
 
 export async function getCurrentMonthSpending(userId: string) {
-  noStore() // <<< thêm dòng này
+  noStore();
 
-  const now = new Date()
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  const now = new Date();
+  const startOfMonthUTC = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0)
+  );
+  const startOfNextMonthUTC = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0, 0)
+  );
 
   const transactions = await db.transaction.findMany({
     where: {
       userId,
-      type: "expense", // lowercase đúng model
+      type: "expense",
       date: {
-        gte: startOfMonth,
-        lt: endOfMonth,
+        gte: startOfMonthUTC,
+        lt: startOfNextMonthUTC,
       },
     },
     select: { amount: true },
-  })
+  });
 
-  const totalSpending = transactions.reduce((sum, t) => sum + t.amount, 0)
+  const totalSpending = transactions.reduce((sum, t) => sum + t.amount, 0);
 
   const settings = await db.userSettings.findUnique({
     where: { userId },
-  })
+  });
 
   return {
     currentSpending: totalSpending,
     monthlyBudget: settings?.monthlyBudget ?? 0,
     currency: settings?.currency ?? "VND",
-  }
+  };
 }

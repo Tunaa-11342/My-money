@@ -29,9 +29,11 @@ export function CashflowSummaryCards({
   const monthKey = q.data?.currentMonthKey;
 
   const fixedIncome = q.data?.fixedIncome ?? 0;
-  const variableIncome = q.data?.currentMonthVariableIncome ?? 0;
-  const totalIncome =
-    q.data?.currentMonthTotalIncome ?? fixedIncome + variableIncome;
+  const actualExpense = q.data?.currentMonthActualExpense ?? 0;
+  const plannedSpending = q.data?.currentMonthPlannedSpending ?? 0;
+
+  // ✅ Còn lại theo kế hoạch = Kế hoạch chi - Chi tiêu thực tế
+  const remainingToPlan = plannedSpending - actualExpense;
 
   const items = [
     {
@@ -44,7 +46,7 @@ export function CashflowSummaryCards({
     },
     {
       title: `Chi tiêu thực tế${monthKey ? ` (${monthKey})` : ""}`,
-      value: q.data?.currentMonthActualExpense ?? 0,
+      value: actualExpense,
       icon: (
         <Receipt className="h-10 w-10 text-rose-400 bg-rose-400/10 rounded-xl p-2" />
       ),
@@ -52,18 +54,15 @@ export function CashflowSummaryCards({
     },
     {
       title: `Kế hoạch chi${monthKey ? ` (${monthKey})` : ""}`,
-      value: q.data?.currentMonthPlannedSpending ?? 0,
+      value: plannedSpending,
       icon: (
         <Wallet className="h-10 w-10 text-violet-400 bg-violet-400/10 rounded-xl p-2" />
       ),
       gradient: "from-violet-400/20 to-indigo-500/10",
     },
     {
-      title: `Số dư khả dụng${monthKey ? ` (${monthKey})` : ""}`,
-      value:
-        totalIncome -
-        (q.data?.currentMonthPlannedSpending ?? 0) -
-        (q.data?.currentMonthGoalSaving ?? 0),
+      title: `Còn lại theo kế hoạch${monthKey ? ` (${monthKey})` : ""}`,
+      value: remainingToPlan,
       icon: (
         <PiggyBank className="h-10 w-10 text-amber-400 bg-amber-400/10 rounded-xl p-2" />
       ),

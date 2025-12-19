@@ -76,7 +76,10 @@ function getIsoWeekStartUTC(year: number, week: number) {
   return addDaysUTC(mondayWeek1, (week - 1) * 7);
 }
 
-function parsePlannedPeriodRangeUTC(periodType: PlannedPeriodType, periodKey: string) {
+function parsePlannedPeriodRangeUTC(
+  periodType: PlannedPeriodType,
+  periodKey: string
+) {
   switch (periodType) {
     case "WEEKLY": {
       // Expected: "YYYY-W02" (or fallback "YYYY-02")
@@ -133,7 +136,10 @@ function parsePlannedPeriodRangeUTC(periodType: PlannedPeriodType, periodKey: st
  * Allocate an amount across months proportionally to number of days in each month segment.
  */
 function allocateAmountToMonthsUTC(start: Date, end: Date, amount: number) {
-  const totalDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000));
+  const totalDays = Math.max(
+    1,
+    Math.round((end.getTime() - start.getTime()) / 86400000)
+  );
   const out: Record<string, number> = {};
 
   let cur = start;
@@ -146,7 +152,10 @@ function allocateAmountToMonthsUTC(start: Date, end: Date, amount: number) {
     const segStart = cur;
     const segEnd = nextMonth < end ? nextMonth : end;
 
-    const segDays = Math.max(0, Math.round((segEnd.getTime() - segStart.getTime()) / 86400000));
+    const segDays = Math.max(
+      0,
+      Math.round((segEnd.getTime() - segStart.getTime()) / 86400000)
+    );
     if (segDays > 0) {
       out[mk] = (out[mk] || 0) + (amount * segDays) / totalDays;
     }
@@ -157,7 +166,10 @@ function allocateAmountToMonthsUTC(start: Date, end: Date, amount: number) {
   return out;
 }
 
-export async function getCashflowSummary(userId: string, monthsAhead = 6): Promise<CashflowSummary> {
+export async function getCashflowSummary(
+  userId: string,
+  monthsAhead = 6
+): Promise<CashflowSummary> {
   const settings = await db.userSettings.findUnique({
     where: { userId },
     select: { currency: true, monthlyBudget: true },
@@ -167,7 +179,10 @@ export async function getCashflowSummary(userId: string, monthsAhead = 6): Promi
   const fixedIncome = Number(settings?.monthlyBudget ?? 0);
 
   const now = new Date();
-  const thisMonthStart = startOfMonthUTC(now.getUTCFullYear(), now.getUTCMonth());
+  const thisMonthStart = startOfMonthUTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth()
+  );
   const nextMonthStart = addMonthsUTC(thisMonthStart, 1);
   const currentMonthKey = toMonthKeyUTC(thisMonthStart);
 
@@ -207,26 +222,29 @@ export async function getCashflowSummary(userId: string, monthsAhead = 6): Promi
       (variableIncomeByMonth[mk] || 0) + Number(t.amount ?? 0);
   }
 
-  const currentMonthVariableIncome = variableIncomeByMonth[currentMonthKey] || 0;
+  const currentMonthVariableIncome =
+    variableIncomeByMonth[currentMonthKey] || 0;
   const currentMonthTotalIncome = fixedIncome + currentMonthVariableIncome;
 
   // Plan
-const plannedRows = await db.plannedSpending.findMany({
-  where: { userId },
-  select: {
-    periodType: true,
-    periodKey: true,
-    targetAmount: true,
-  },
-});
-
+  const plannedRows = await db.plannedSpending.findMany({
+    where: { userId },
+    select: {
+      periodType: true,
+      periodKey: true,
+      targetAmount: true,
+    },
+  });
 
   const plannedByMonth: Record<string, number> = {};
   for (const row of plannedRows) {
     const amt = Number(row.targetAmount ?? 0);
     if (!amt) continue;
 
-    const { start, end } = parsePlannedPeriodRangeUTC(row.periodType, row.periodKey);
+    const { start, end } = parsePlannedPeriodRangeUTC(
+      row.periodType,
+      row.periodKey
+    );
     const allocated = allocateAmountToMonthsUTC(start, end, amt);
     for (const [mk, v] of Object.entries(allocated)) {
       plannedByMonth[mk] = (plannedByMonth[mk] || 0) + v;
