@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Separator } from "@/components/ui/separator";
 import {
   Card,
   CardContent,
@@ -16,10 +15,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import { CurrencyComboBox } from "@/components/app-logic/currency-combobox";
-import { BudgetSetting } from "@/app/(lobby)/manage/_components/budget-setting";
 import { updateFirstLogin } from "@/lib/actions/user-setting";
+import { CashflowSetting } from "@/app/(lobby)/manage/_components/cashflow-setting";
 
 interface WizardUser {
   id: string;
@@ -30,6 +28,7 @@ interface WizardUser {
 interface WizardSettings {
   monthlyBudget?: number | null;
   currency?: string | null;
+  firstLogin?: boolean | null;
 }
 
 export function WizardDialog({
@@ -40,22 +39,23 @@ export function WizardDialog({
   settings: WizardSettings | null;
 }) {
   const [open, setOpen] = useState(true);
+  const [income, setIncome] = useState<number>(settings?.monthlyBudget ?? 0);
+
+  const submitIncomeRef = useRef<null | (() => Promise<void>)>(null);
+
+  const canFinish = Number.isFinite(income) && income >= 0;
 
   async function finishWizard() {
+    if (submitIncomeRef.current) {
+      await submitIncomeRef.current();
+    }
     await updateFirstLogin(user.id);
     setOpen(false);
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent
-        className="
-          max-w-xl w-full 
-          p-0 
-          overflow-hidden 
-          rounded-xl
-        "
-      >
+      <DialogContent className="max-w-xl w-full p-0 overflow-hidden rounded-xl">
         {/* Header */}
         <div className="p-6 pb-4 border-b">
           <DialogHeader className="space-y-1">
@@ -67,10 +67,7 @@ export function WizardDialog({
             </p>
           </DialogHeader>
         </div>
-
-        {/* Scrollable content */}
         <div className="max-h-[60vh] overflow-y-auto px-6 py-4 space-y-6">
-          {/* Currency */}
           <Card className="w-full">
             <CardHeader>
               <CardTitle>Đơn vị tiền tệ</CardTitle>
@@ -83,22 +80,16 @@ export function WizardDialog({
             </CardContent>
           </Card>
 
-          {/* Budget */}
-          <Card className="w-full">
-            <CardHeader>
-              <CardTitle>Ngân sách hàng tháng</CardTitle>
-              <CardDescription>
-                Đặt hạn mức chi tiêu để nhận thông báo khi gần vượt ngân sách.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <BudgetSetting
-                userId={user.id}
-                currentBudget={settings?.monthlyBudget ?? 0}
-                currency={settings?.currency || "VND"}
-              />
-            </CardContent>
-          </Card>
+          <CashflowSetting
+            userId={user.id}
+            currency={settings?.currency || "VND"}
+            currentIncome={settings?.monthlyBudget ?? 0}
+            hideSaveButton
+            onIncomeChange={setIncome}
+            registerSubmit={(fn) => {
+              submitIncomeRef.current = fn;
+            }}
+          />
         </div>
 
         {/* Footer */}
@@ -106,11 +97,10 @@ export function WizardDialog({
           <Button
             className="w-full h-12 text-base font-medium"
             onClick={finishWizard}
+            disabled={!canFinish}
           >
             Tôi đã xong!
           </Button>
-
-          <div className="flex justify-center opacity-80"></div>
         </div>
       </DialogContent>
     </Dialog>

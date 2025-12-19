@@ -54,8 +54,11 @@ export function CashflowSummaryCards({
       gradient: "from-violet-400/20 to-indigo-500/10",
     },
     {
-      title: `Tiết kiệm gợi ý${monthKey ? ` (${monthKey})` : ""}`,
-      value: q.data?.currentMonthGoalSaving ?? 0,
+      title: `Số dư khả dụng${monthKey ? ` (${monthKey})` : ""}`,
+      value:
+        (q.data?.fixedIncome ?? 0) -
+        (q.data?.currentMonthPlannedSpending ?? 0) -
+        (q.data?.currentMonthGoalSaving ?? 0),
       icon: (
         <PiggyBank className="h-10 w-10 text-amber-400 bg-amber-400/10 rounded-xl p-2" />
       ),

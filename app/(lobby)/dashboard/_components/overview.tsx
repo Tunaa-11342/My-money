@@ -47,20 +47,14 @@ function Overview({ userSettings }: { userSettings: UserSettings | null }) {
           />
         </div>
       </div>
-
-      {/* NỘI DUNG: vẫn dùng container full, chỉ thêm grid 2 cột */}
       <div className="container flex w-full flex-col gap-4 pb-6">
-        {/* Hàng thẻ Thu nhập / Chi tiêu / Số dư */}
         <CashflowSummaryCards userSettings={userSettings} />
-        {/* Hàng dưới: trái = danh mục, phải = widget kế hoạch */}
         <div className="grid gap-4 lg:grid-cols-[2fr,1fr] items-start">
           <CategoriesStats
             userSettings={userSettings}
             from={dateRange.from}
             to={dateRange.to}
           />
-
-          {/* Nếu m dùng widget riêng */}
           <PlannedSpendingDashboardWidget userSettings={userSettings} />
         </div>
       </div>
