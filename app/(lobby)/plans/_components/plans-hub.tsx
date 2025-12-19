@@ -14,11 +14,7 @@ import { CreatePlanDialog } from "@/components/dialog/create-plan-dialog";
 
 type TabKey = "spending" | "saving" | "debt";
 
-interface PlansHubProps {
-  userId: string;
-}
-
-export function PlansHub({ userId }: PlansHubProps) {
+export function PlansHub({ userId }: { userId: string }) {
   const [tab, setTab] = useState<TabKey>("spending");
 
   const header = useMemo(() => {
@@ -50,12 +46,13 @@ export function PlansHub({ userId }: PlansHubProps) {
 
   return (
     <div className="space-y-6">
-      {/* Hero header */}
-      <Card className="rounded-2xl">
-        <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+      {/* Header card */}
+      <Card className="relative overflow-hidden rounded-2xl border-white/10 bg-card/50 backdrop-blur-md">
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-transparent to-emerald-500/10" />
+        <CardContent className="relative flex flex-col gap-5 p-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl border bg-muted/30">
-              <Icon className="h-5 w-5" />
+            <div className="h-11 w-11 rounded-2xl bg-muted/30 flex items-center justify-center border border-border/60">
+              <Icon className="h-5 w-5 text-muted-foreground" />
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
@@ -66,9 +63,7 @@ export function PlansHub({ userId }: PlansHubProps) {
             </div>
           </div>
 
-          {/* CTA
-             Lưu ý: CreatePlanDialog hiện tại vẫn là dialog tạo "chi tiêu".
-             Khi m nâng cấp dialog 3 tab, chỉ cần thay component này. */}
+          {/* CTA */}
           <div className="flex items-center gap-2">
             <CreatePlanDialog userId={userId} triggerVariant="primary" triggerText="Tạo kế hoạch" />
             <Button variant="outline" className="gap-2" onClick={() => setTab("spending")}>

@@ -5,7 +5,11 @@ import type { PlannedPeriodType } from "@prisma/client";
 
 export type CashflowForecastRow = {
   monthKey: string; // YYYY-MM
-  income: number; // monthlyBudget (fixed income)
+
+  fixedIncome: number; // monthlyBudget (thu nhập cố định)
+  variableIncome: number; // tổng thu nhập phát sinh (transactions income) trong tháng
+  income: number; // total = fixedIncome + variableIncome
+
   plannedSpending: number; // planned spending allocated into this month
   goalSaving: number; // recommended saving for pinned saving goals
   net: number; // income - plannedSpending - goalSaving
@@ -16,6 +20,13 @@ export type CashflowSummary = {
   fixedIncome: number;
 
   currentMonthKey: string;
+
+  // Thu nhập phát sinh (không cố định) trong tháng hiện tại
+  currentMonthVariableIncome: number;
+
+  // Tổng thu nhập tháng hiện tại = cố định + phát sinh
+  currentMonthTotalIncome: number;
+
   currentMonthActualExpense: number;
   currentMonthPlannedSpending: number;
   currentMonthGoalSaving: number;
@@ -29,7 +40,7 @@ export type CashflowSummary = {
 };
 
 function pad2(n: number) {
-  return String(n).padStart(2, "0");
+  return n < 10 ? `0${n}` : `${n}`;
 }
 
 function toMonthKeyUTC(d: Date) {
@@ -60,15 +71,35 @@ function addDaysUTC(d: Date, days: number) {
  */
 function getIsoWeekStartUTC(year: number, week: number) {
   const jan4 = new Date(Date.UTC(year, 0, 4, 0, 0, 0, 0));
-  const dayOfWeek = jan4.getUTCDay() || 7; // 1..7, Monday..Sunday
-  const firstWeekMonday = new Date(jan4.getTime() - (dayOfWeek - 1) * 86400000);
-  return addDaysUTC(firstWeekMonday, (week - 1) * 7);
+  const jan4Day = jan4.getUTCDay() || 7; // 1..7
+  const mondayWeek1 = addDaysUTC(jan4, -(jan4Day - 1));
+  return addDaysUTC(mondayWeek1, (week - 1) * 7);
 }
 
 function parsePlannedPeriodRangeUTC(periodType: PlannedPeriodType, periodKey: string) {
-  // returns [start, end) in UTC
   switch (periodType) {
+    case "WEEKLY": {
+      // Expected: "YYYY-W02" (or fallback "YYYY-02")
+      const [yStr, wStrRaw] = periodKey.split("-");
+      const year = parseInt(yStr, 10);
+      const week = parseInt((wStrRaw ?? "").replace("W", ""), 10);
+      const start = getIsoWeekStartUTC(year, week);
+      const end = addDaysUTC(start, 7);
+      return { start, end };
+    }
+
+    case "MONTHLY": {
+      // "YYYY-MM"
+      const [yStr, mStr] = periodKey.split("-");
+      const year = parseInt(yStr, 10);
+      const month = parseInt(mStr, 10); // 1..12
+      const start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
+      const end = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
+      return { start, end };
+    }
+
     case "YEARLY": {
+      // "YYYY"
       const year = parseInt(periodKey, 10);
       const start = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
       const end = new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0, 0));
@@ -76,6 +107,7 @@ function parsePlannedPeriodRangeUTC(periodType: PlannedPeriodType, periodKey: st
     }
 
     case "QUARTERLY": {
+      // "YYYY-Q1" ... "YYYY-Q4"
       const [yStr, qStr] = periodKey.split("-");
       const year = parseInt(yStr, 10);
       const quarter = parseInt(qStr.replace("Q", ""), 10); // 1..4
@@ -85,74 +117,44 @@ function parsePlannedPeriodRangeUTC(periodType: PlannedPeriodType, periodKey: st
       return { start, end };
     }
 
-    case "MONTHLY": {
+    default: {
+      // Fallback -> treat as MONTHLY
       const [yStr, mStr] = periodKey.split("-");
       const year = parseInt(yStr, 10);
-      const month = parseInt(mStr, 10); // 1..12
+      const month = parseInt(mStr, 10) || 1;
       const start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
       const end = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
       return { start, end };
     }
-
-    case "WEEKLY": {
-      const [yStr, wRaw] = periodKey.split("-");
-      const year = Number(yStr);
-      const week = Number(String(wRaw).replace("W", "")); // supports W02 or 02
-
-      const start = getIsoWeekStartUTC(year, week);
-      const end = addDaysUTC(start, 7);
-      return { start, end };
-    }
-
-    default: {
-      // fallback: treat as current month
-      const now = new Date();
-      const start = startOfMonthUTC(now.getUTCFullYear(), now.getUTCMonth());
-      const end = addMonthsUTC(start, 1);
-      return { start, end };
-    }
   }
-}
-
-function overlapMs(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date) {
-  const start = Math.max(aStart.getTime(), bStart.getTime());
-  const end = Math.min(aEnd.getTime(), bEnd.getTime());
-  return Math.max(0, end - start);
 }
 
 /**
- * Allocate an amount across months proportionally by overlapped milliseconds.
- * This makes WEEKLY crossing month boundary still correct.
+ * Allocate an amount across months proportionally to number of days in each month segment.
  */
 function allocateAmountToMonthsUTC(start: Date, end: Date, amount: number) {
-  const totalMs = Math.max(1, end.getTime() - start.getTime());
-  const map: Record<string, number> = {};
+  const totalDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000));
+  const out: Record<string, number> = {};
 
-  // iterate month by month
-  let cursor = startOfMonthUTC(start.getUTCFullYear(), start.getUTCMonth());
-  const endMonthStart = startOfMonthUTC(end.getUTCFullYear(), end.getUTCMonth());
+  let cur = start;
+  while (cur < end) {
+    const mk = toMonthKeyUTC(cur);
 
-  // include last month if end spills into it
-  while (cursor.getTime() <= endMonthStart.getTime()) {
-    const next = addMonthsUTC(cursor, 1);
-    const key = toMonthKeyUTC(cursor);
-    const ms = overlapMs(start, end, cursor, next);
-    if (ms > 0) {
-      map[key] = (map[key] || 0) + (amount * ms) / totalMs;
+    const monthStart = startOfMonthUTC(cur.getUTCFullYear(), cur.getUTCMonth());
+    const nextMonth = addMonthsUTC(monthStart, 1);
+
+    const segStart = cur;
+    const segEnd = nextMonth < end ? nextMonth : end;
+
+    const segDays = Math.max(0, Math.round((segEnd.getTime() - segStart.getTime()) / 86400000));
+    if (segDays > 0) {
+      out[mk] = (out[mk] || 0) + (amount * segDays) / totalDays;
     }
-    cursor = next;
+
+    cur = segEnd;
   }
 
-  return map;
-}
-
-function monthsDiffInclusiveUTC(fromMonthStart: Date, toMonthStart: Date) {
-  const y1 = fromMonthStart.getUTCFullYear();
-  const m1 = fromMonthStart.getUTCMonth(); // 0..11
-  const y2 = toMonthStart.getUTCFullYear();
-  const m2 = toMonthStart.getUTCMonth();
-  const diff = (y2 - y1) * 12 + (m2 - m1);
-  return diff + 1; // inclusive
+  return out;
 }
 
 export async function getCashflowSummary(userId: string, monthsAhead = 6): Promise<CashflowSummary> {
@@ -183,15 +185,41 @@ export async function getCashflowSummary(userId: string, monthsAhead = 6): Promi
   });
   const currentMonthActualExpense = Number(expenseAgg._sum.amount ?? 0);
 
-  // Planned spending: fetch all then allocate into months (small per user, OK)
-  const plannedRows = await db.plannedSpending.findMany({
-    where: { userId },
-    select: {
-      periodType: true,
-      periodKey: true,
-      targetAmount: true,
+  // Variable income (transactions type="income") within forecast range
+  const forecastEnd = addMonthsUTC(thisMonthStart, Math.max(1, monthsAhead));
+
+  const incomeTxs = await db.transaction.findMany({
+    where: {
+      userId,
+      type: "income",
+      date: {
+        gte: thisMonthStart,
+        lt: forecastEnd,
+      },
     },
+    select: { amount: true, date: true },
   });
+
+  const variableIncomeByMonth: Record<string, number> = {};
+  for (const t of incomeTxs) {
+    const mk = toMonthKeyUTC(t.date);
+    variableIncomeByMonth[mk] =
+      (variableIncomeByMonth[mk] || 0) + Number(t.amount ?? 0);
+  }
+
+  const currentMonthVariableIncome = variableIncomeByMonth[currentMonthKey] || 0;
+  const currentMonthTotalIncome = fixedIncome + currentMonthVariableIncome;
+
+  // Plan
+const plannedRows = await db.plannedSpending.findMany({
+  where: { userId },
+  select: {
+    periodType: true,
+    periodKey: true,
+    targetAmount: true,
+  },
+});
+
 
   const plannedByMonth: Record<string, number> = {};
   for (const row of plannedRows) {
@@ -218,24 +246,23 @@ export async function getCashflowSummary(userId: string, monthsAhead = 6): Promi
 
   const goalSavingByMonth: Record<string, number> = {};
   for (const g of goals) {
-    if (!g.targetDate) continue;
-
-    const target = new Date(g.targetDate);
-    // ignore goals already due in the past
-    if (target.getTime() < thisMonthStart.getTime()) continue;
-
-    const remaining = Math.max(0, Number(g.targetAmount ?? 0) - Number(g.currentAmount ?? 0));
+    const target = Number(g.targetAmount ?? 0);
+    const current = Number(g.currentAmount ?? 0);
+    const remaining = Math.max(0, target - current);
     if (remaining <= 0) continue;
 
-    const targetMonthStart = startOfMonthUTC(target.getUTCFullYear(), target.getUTCMonth());
-    const monthsLeft = monthsDiffInclusiveUTC(thisMonthStart, targetMonthStart);
-    const perMonth = remaining / Math.max(1, monthsLeft);
+    const td = g.targetDate ? new Date(g.targetDate) : null;
+    if (!td) continue;
 
-    // apply perMonth from this month up to target month inclusive
-    for (let i = 0; i < monthsLeft; i++) {
-      const mStart = addMonthsUTC(thisMonthStart, i);
-      const mk = toMonthKeyUTC(mStart);
-      goalSavingByMonth[mk] = (goalSavingByMonth[mk] || 0) + perMonth;
+    const start = thisMonthStart;
+    const end = startOfMonthUTC(td.getUTCFullYear(), td.getUTCMonth() + 1);
+
+    // if already passed, skip
+    if (end <= start) continue;
+
+    const allocated = allocateAmountToMonthsUTC(start, end, remaining);
+    for (const [mk, v] of Object.entries(allocated)) {
+      goalSavingByMonth[mk] = (goalSavingByMonth[mk] || 0) + v;
     }
   }
 
@@ -249,12 +276,17 @@ export async function getCashflowSummary(userId: string, monthsAhead = 6): Promi
     const plannedSpending = plannedByMonth[mk] || 0;
     const goalSaving = goalSavingByMonth[mk] || 0;
 
-    const net = fixedIncome - plannedSpending - goalSaving;
+    const variableIncome = variableIncomeByMonth[mk] || 0;
+    const income = fixedIncome + variableIncome;
+
+    const net = income - plannedSpending - goalSaving;
     if (net < 0) negativeMonths.push(mk);
 
     forecast.push({
       monthKey: mk,
-      income: fixedIncome,
+      fixedIncome,
+      variableIncome,
+      income,
       plannedSpending,
       goalSaving,
       net,
@@ -269,6 +301,9 @@ export async function getCashflowSummary(userId: string, monthsAhead = 6): Promi
     fixedIncome,
 
     currentMonthKey,
+    currentMonthVariableIncome,
+    currentMonthTotalIncome,
+
     currentMonthActualExpense,
     currentMonthPlannedSpending,
     currentMonthGoalSaving,

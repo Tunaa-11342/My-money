@@ -52,11 +52,6 @@ export function PlansView({ userId }: PlansViewProps) {
         onValueChange={(v) => setTab(v as ViewTab)}
         className="space-y-4"
       >
-        <TabsList>
-          <TabsTrigger value="active">Đang thực hiện</TabsTrigger>
-          <TabsTrigger value="all">Toàn bộ kế hoạch</TabsTrigger>
-        </TabsList>
-
         <TabsContent value="active">
           <ActivePlansTab
             userId={userId}

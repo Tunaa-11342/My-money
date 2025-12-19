@@ -28,10 +28,15 @@ export function CashflowSummaryCards({
 
   const monthKey = q.data?.currentMonthKey;
 
+  const fixedIncome = q.data?.fixedIncome ?? 0;
+  const variableIncome = q.data?.currentMonthVariableIncome ?? 0;
+  const totalIncome =
+    q.data?.currentMonthTotalIncome ?? fixedIncome + variableIncome;
+
   const items = [
     {
       title: "Thu nhập cố định",
-      value: q.data?.fixedIncome ?? 0,
+      value: fixedIncome,
       icon: (
         <HandCoins className="h-10 w-10 text-emerald-400 bg-emerald-400/10 rounded-xl p-2" />
       ),
@@ -56,7 +61,7 @@ export function CashflowSummaryCards({
     {
       title: `Số dư khả dụng${monthKey ? ` (${monthKey})` : ""}`,
       value:
-        (q.data?.fixedIncome ?? 0) -
+        totalIncome -
         (q.data?.currentMonthPlannedSpending ?? 0) -
         (q.data?.currentMonthGoalSaving ?? 0),
       icon: (
@@ -74,18 +79,15 @@ export function CashflowSummaryCards({
             className={cn(
               "relative overflow-hidden rounded-2xl border border-white/10 p-6",
               "transition-all duration-500 hover:scale-[1.02] hover:shadow-lg",
-              // nền “kính” đúng kiểu (không dùng bg-card/50)
               "bg-[rgba(var(--card-rgb),0.55)] backdrop-blur-md",
-              // lớp gradient màu bên trong
               "before:absolute before:inset-0 before:bg-gradient-to-br before:opacity-60 before:content-['']",
               item.gradient,
-              // lớp highlight mờ ở góc cho giống “lụa”
               "after:absolute after:inset-0 after:bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.18),transparent_55%)] after:content-['']"
             )}
           >
-            <div className="relative">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold text-muted-foreground">
+            <div className="relative z-10">
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="text-sm font-medium text-muted-foreground">
                   {item.title}
                 </h3>
                 {item.icon}
