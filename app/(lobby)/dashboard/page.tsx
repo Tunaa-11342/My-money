@@ -87,13 +87,12 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-{safeSettings ? (
-  <>
-    <BudgetControlPanel userId={safeUser.id} currency={safeSettings.currency} />
-    <Overview userSettings={safeSettings} />
-    <History userSettings={safeSettings} />
-  </>
-) : null}
+      {safeSettings ? (
+        <>
+          <Overview userSettings={safeSettings} />
+          <History userSettings={safeSettings} />
+        </>
+      ) : null}
     </div>
   );
 }

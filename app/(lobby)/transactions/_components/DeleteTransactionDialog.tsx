@@ -33,12 +33,7 @@ function DeleteTransactionDialog({ open, setOpen, transactionId }: Props) {
       toast.success("Đã xóa giao dịch!", { id: transactionId });
       setOpen(false);
       await queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      await queryClient.invalidateQueries({
-        queryKey: ["overview", "history"],
-      });
-      await queryClient.invalidateQueries({ queryKey: ["overview"] });
     },
-
     onError: () => {
       toast.error("Không xóa được.", { id: transactionId });
     },

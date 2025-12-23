@@ -8,32 +8,28 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
+  id        String        @id @default(cuid())
+  email     String        @unique
   name      String?
-  createdAt DateTime @default(now())
+  createdAt DateTime      @default(now())
   imageUrl  String?
 
-  userSettings          UserSettings?
-  memberships           Membership[]
-  plannedSpendings      PlannedSpending[]
-  savingGoals           SavingGoal[]
-  debtPlans             DebtPlan[]
+  userSettings     UserSettings?
+  memberships      Membership[]
+  plannedSpendings PlannedSpending[]
+  savingGoals      SavingGoal[]
+  debtPlans        DebtPlan[]    
   recurringCashflowItem RecurringCashflowItem[]
-  transactions          Transaction[]
 }
 
 model UserSettings {
-  id String @id @default(uuid())
+  id String? @default(uuid())
 
   userId String @unique
 
-  currency          String            @default("VND")
-  monthlyBudget     Decimal           @default(0) @db.Decimal(14, 2)
-  budgetStartAt     DateTime          @default(now())
-  budgetEnforcement BudgetEnforcement @default(STRICT)
-  carryPolicy       CarryPolicy       @default(NET)
-  firstLogin        Boolean           @default(true)
+  currency      String  @default("VND")
+  monthlyBudget Float   @default(0)
+  firstLogin    Boolean @default(true)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -51,22 +47,16 @@ model Category {
 }
 
 model Transaction {
-  id          String   @id @default(uuid())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  amount      Decimal  @db.Decimal(14, 2)
-  description String
-  date        DateTime
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  type         TransactionType @default(expense)
+  id           String   @id @default(uuid())
+  createdAt    DateTime @default(now())
+  updateAt     DateTime @default(now())
+  amount       Float
+  description  String
+  date         DateTime
+  userId       String
+  type         String   @default("income")
   category     String
   categoryIcon String
-
-  @@index([userId, date])
-  @@index([userId, type, date])
 }
 
 model MonthHistory {
@@ -144,8 +134,6 @@ enum ExpenseCategory {
 }
 
 enum PlannedPeriodType {
-  ONE_TIME
-  DAILY
   WEEKLY
   MONTHLY
   QUARTERLY
@@ -153,74 +141,67 @@ enum PlannedPeriodType {
 }
 
 model PlannedSpending {
-  id           String            @id @default(cuid())
-  userId       String
-  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name         String
-  categoryIcon String?
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   categoryId   String?
   category     Category?         @relation(fields: [categoryId], references: [id])
   title        String
-  periodType   PlannedPeriodType @default(MONTHLY)
-
-  amount Decimal @db.Decimal(14, 2)
-
+  periodType   PlannedPeriodType
   periodKey    String
-  targetAmount Decimal @db.Decimal(14, 2)
-  isPinned     Boolean @default(false)
+  targetAmount Decimal           @db.Decimal(14, 2)
+  isPinned     Boolean           @default(false)
   notes        String?
   color        String?
-
-  startDate DateTime
-  endDate   DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 
   @@index([userId, periodType, periodKey])
   @@index([userId, categoryId, periodType, periodKey])
 }
 
 enum DebtCategory {
-  COLLECT
-  BORROW
-  LEND
-  REPAY
+  COLLECT 
+  BORROW  
+  LEND    
+  REPAY   
 }
 
 model SavingGoal {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   title         String
-  targetAmount  Decimal @db.Decimal(14, 2)
-  currentAmount Decimal @default(0) @db.Decimal(14, 2)
+  targetAmount  Decimal  @db.Decimal(14, 2)
+  currentAmount Decimal  @db.Decimal(14, 2) @default(0)
 
-  startDate  DateTime  @default(now())
-  targetDate DateTime?
+  startDate     DateTime @default(now())
+  targetDate    DateTime?
 
-  isPinned Boolean @default(false)
+  isPinned      Boolean  @default(false)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([userId])
   @@index([userId, isPinned])
 }
 
 model DebtPlan {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String       @id @default(cuid())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  title    String
-  category DebtCategory
-  amount   Decimal      @db.Decimal(14, 2)
-  isPinned Boolean      @default(false)
+  title     String
+  category  DebtCategory
+  amount    Decimal      @db.Decimal(14, 2)
+  isPinned  Boolean      @default(false)
 
   notes     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 
   @@index([userId])
   @@index([userId, category])
@@ -228,37 +209,24 @@ model DebtPlan {
 }
 
 model RecurringCashflowItem {
-  id     String @id @default(cuid())
-  userId String
+  id         String   @id @default(cuid())
+  userId     String
 
   kind       String
   title      String
-  amount     Decimal   @db.Decimal(18, 2)
+  amount     Decimal  @db.Decimal(18, 2)
   periodType String
-  dayOfMonth Int?
+  dayOfMonth Int?   
   startDate  DateTime?
   endDate    DateTime?
 
-  isActive Boolean @default(true)
+  isActive   Boolean  @default(true)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([userId, kind])
-}
-
-enum TransactionType {
-  income
-  expense
-}
-
-enum BudgetEnforcement {
-  STRICT
-}
-
-enum CarryPolicy {
-  NET
 }
