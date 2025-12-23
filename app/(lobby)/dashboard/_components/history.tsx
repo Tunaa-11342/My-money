@@ -1,15 +1,9 @@
 "use client";
 
-import SkeletonWrapper from "@/components/skeletons/wrapper-skeleton";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { GetFormatterForCurrency } from "@/lib/utils";
-import { Period, Timeframe } from "@/types";
-import { cn } from "@/lib/utils";
-import { UserSettings } from "@prisma/client";
-import { useQuery } from "@tanstack/react-query";
 import React, { useCallback, useMemo, useState } from "react";
 import CountUp from "react-countup";
+import { useQuery } from "@tanstack/react-query";
+import type { TooltipProps } from "recharts";
 import {
   Bar,
   BarChart,
@@ -21,11 +15,29 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+
+import SkeletonWrapper from "@/components/skeletons/wrapper-skeleton";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { getHistoryData } from "@/lib/actions/history";
+import { GetFormatterForCurrency } from "@/lib/utils";
+import type { Period, Timeframe } from "@/types";
+import type { UserSettings } from "@prisma/client";
+import { unstable_noStore as noStore } from "next/cache";
 import HistoryPeriodSelector from "./history-period-selector";
 
+type HistoryPoint = {
+  income: number;
+  expense: number;
+  year?: number;
+  month?: number;
+  day?: number;
+  label?: string;
+};
+
 function History({ userSettings }: { userSettings: UserSettings | null }) {
-  if (!userSettings) return null; 
+  if (!userSettings) return null;
   return <HistoryContent userSettings={userSettings} />;
 }
 
@@ -41,13 +53,25 @@ function HistoryContent({ userSettings }: { userSettings: UserSettings }) {
     () => GetFormatterForCurrency(userSettings.currency),
     [userSettings.currency]
   );
+  const queryKey = useMemo(
+    () => [
+      "overview",
+      "history",
+      timeframe,
+      period.year,
+      period.month ?? null,
+      period.week ?? null,
+    ],
+    [timeframe, period.year, period.month, period.week]
+  );
 
-  const historyDataQuery = useQuery({
-    queryKey: ["overview", "history", timeframe, period],
-    queryFn: () => {
-      const periodData: Period = {
-        year: period.year,
-      };
+  const historyDataQuery = useQuery<HistoryPoint[]>({
+    refetchInterval: 10_000, // 10s
+    refetchIntervalInBackground: false,
+
+    queryKey,
+    queryFn: async () => {
+      const periodData: Period = { year: period.year };
 
       if (timeframe === "month" || timeframe === "week") {
         periodData.month = period.month!;
@@ -56,19 +80,26 @@ function HistoryContent({ userSettings }: { userSettings: UserSettings }) {
         periodData.week = period.week!;
       }
 
-      return getHistoryData(userSettings.userId, timeframe, periodData);
+      const res = await getHistoryData(
+        userSettings.userId,
+        timeframe,
+        periodData
+      );
+      return (res ?? []) as HistoryPoint[];
     },
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   });
 
-  const dataAvailable =
-    historyDataQuery.data && historyDataQuery.data.length > 0;
+  const data = historyDataQuery.data ?? [];
+  const dataAvailable = data.length > 0;
 
   return (
     <div className="container mt-12">
       <h2 className="text-3xl font-bold mb-4">Lịch sử giao dịch</h2>
 
       <Card className="relative overflow-hidden rounded-2xl border border-white/10 bg-card/50 backdrop-blur-md">
-        {/* Hiệu ứng nền blur-gradient */}
         <div className="absolute inset-0 -z-10 bg-gradient-to-br from-indigo-500/20 via-transparent to-purple-500/20 blur-3xl opacity-70" />
 
         <CardHeader className="gap-2">
@@ -83,14 +114,14 @@ function HistoryContent({ userSettings }: { userSettings: UserSettings }) {
 
             <div className="flex h-10 gap-2">
               <Badge
-                variant={"outline"}
+                variant="outline"
                 className="flex items-center gap-2 text-sm"
               >
                 <div className="h-4 w-4 rounded-full bg-emerald-500" />
                 Thu nhập
               </Badge>
               <Badge
-                variant={"outline"}
+                variant="outline"
                 className="flex items-center gap-2 text-sm"
               >
                 <div className="h-4 w-4 rounded-full bg-red-500" />
@@ -105,18 +136,18 @@ function HistoryContent({ userSettings }: { userSettings: UserSettings }) {
             {dataAvailable ? (
               <ResponsiveContainer width="100%" height={320}>
                 {timeframe === "year" ? (
-                  // === NĂM: BarChart ===
-                  <BarChart data={historyDataQuery.data} barCategoryGap={8}>
+                  <BarChart data={data} barCategoryGap={8}>
                     <CartesianGrid
                       strokeDasharray="5 5"
                       strokeOpacity={0.15}
                       vertical={false}
                     />
                     <XAxis
-                      dataKey={(d) =>
-                        new Date(d.year, d.month).toLocaleDateString("vi-VN", {
-                          month: "short",
-                        })
+                      dataKey={(d: HistoryPoint) =>
+                        new Date(d.year ?? 0, d.month ?? 0).toLocaleDateString(
+                          "vi-VN",
+                          { month: "short" }
+                        )
                       }
                       tickLine={false}
                       axisLine={false}
@@ -132,23 +163,29 @@ function HistoryContent({ userSettings }: { userSettings: UserSettings }) {
                     <Bar dataKey="income" fill="#10b981" radius={4} />
                     <Bar dataKey="expense" fill="#ef4444" radius={4} />
                     <Tooltip
-                      cursor={{ opacity: 0.1 }}
                       content={(p) => (
-                        <CustomTooltip formatter={formatter} {...p} />
+                        <CustomTooltip
+                          moneyFmt={formatter}
+                          active={p.active}
+                          payload={p.payload}
+                        />
                       )}
                     />
                   </BarChart>
                 ) : timeframe === "month" ? (
-                  // === THÁNG: LineChart ===
-                  <LineChart data={historyDataQuery.data}>
+                  <LineChart data={data}>
                     <CartesianGrid
                       strokeDasharray="3 3"
                       strokeOpacity={0.15}
                       vertical={false}
                     />
                     <XAxis
-                      dataKey={(d) =>
-                        new Date(d.year, d.month, d.day).getDate()
+                      dataKey={(d: HistoryPoint) =>
+                        new Date(
+                          d.year ?? 0,
+                          d.month ?? 0,
+                          d.day ?? 1
+                        ).getDate()
                       }
                       tickLine={false}
                       axisLine={false}
@@ -162,11 +199,15 @@ function HistoryContent({ userSettings }: { userSettings: UserSettings }) {
                       stroke="#aaa"
                     />
                     <Tooltip
-                      cursor={{ opacity: 0.1 }}
                       content={(p) => (
-                        <CustomTooltip formatter={formatter} {...p} />
+                        <CustomTooltip
+                          moneyFmt={formatter}
+                          active={p.active}
+                          payload={p.payload}
+                        />
                       )}
                     />
+
                     <Line
                       type="monotone"
                       dataKey="income"
@@ -183,15 +224,14 @@ function HistoryContent({ userSettings }: { userSettings: UserSettings }) {
                     />
                   </LineChart>
                 ) : (
-                  // === TUẦN: BarChart đồng nhất màu ===
-                  <BarChart data={historyDataQuery.data} barCategoryGap={10}>
+                  <BarChart data={data} barCategoryGap={10}>
                     <CartesianGrid
                       strokeDasharray="5 5"
                       strokeOpacity={0.15}
                       vertical={false}
                     />
                     <XAxis
-                      dataKey={(d) => d.label}
+                      dataKey={(d: HistoryPoint) => d.label ?? ""}
                       tickLine={false}
                       axisLine={false}
                       fontSize={12}
@@ -206,9 +246,12 @@ function HistoryContent({ userSettings }: { userSettings: UserSettings }) {
                     <Bar dataKey="income" fill="#10b981" radius={4} />
                     <Bar dataKey="expense" fill="#ef4444" radius={4} />
                     <Tooltip
-                      cursor={{ opacity: 0.1 }}
                       content={(p) => (
-                        <CustomTooltip formatter={formatter} {...p} />
+                        <CustomTooltip
+                          moneyFmt={formatter}
+                          active={p.active}
+                          payload={p.payload}
+                        />
                       )}
                     />
                   </BarChart>
@@ -233,11 +276,20 @@ function HistoryContent({ userSettings }: { userSettings: UserSettings }) {
 
 export default History;
 
-// ================== TOOLTIP TÙY CHỈNH ==================
-function CustomTooltip({ active, payload, formatter }: any) {
+type CustomTooltipProps = {
+  active?: boolean;
+  payload?: any[];
+  moneyFmt: Intl.NumberFormat;
+};
+
+function CustomTooltip({ active, payload, moneyFmt }: CustomTooltipProps) {
   if (!active || !payload || payload.length === 0) return null;
-  const data = payload[0].payload;
-  const { expense, income } = data;
+
+  const raw = payload?.[0]?.payload as HistoryPoint | undefined;
+  if (!raw) return null;
+
+  const expense = Number(raw.expense ?? 0);
+  const income = Number(raw.income ?? 0);
 
   return (
     <div className="min-w-[280px] rounded-xl border border-white/10 bg-card/80 backdrop-blur-md p-4 shadow-lg">
@@ -245,19 +297,19 @@ function CustomTooltip({ active, payload, formatter }: any) {
         label="Chi tiêu"
         value={expense}
         color="#ef4444"
-        formatter={formatter}
+        moneyFmt={moneyFmt}
       />
       <TooltipRow
         label="Thu nhập"
         value={income}
         color="#10b981"
-        formatter={formatter}
+        moneyFmt={moneyFmt}
       />
       <TooltipRow
         label="Số dư"
         value={income - expense}
         color="#a78bfa"
-        formatter={formatter}
+        moneyFmt={moneyFmt}
       />
     </div>
   );
@@ -267,17 +319,13 @@ function TooltipRow({
   label,
   value,
   color,
-  formatter,
+  moneyFmt,
 }: {
   label: string;
   value: number;
   color: string;
-  formatter: Intl.NumberFormat;
+  moneyFmt: Intl.NumberFormat;
 }) {
-  const formattingFn = useCallback(
-    (v: number) => formatter.format(v),
-    [formatter]
-  );
   return (
     <div className="flex items-center justify-between mb-1">
       <span className="flex items-center gap-2">
@@ -287,14 +335,9 @@ function TooltipRow({
         />
         <span className="text-sm text-muted-foreground">{label}</span>
       </span>
+
       <span className="font-semibold" style={{ color }}>
-        <CountUp
-          duration={0.5}
-          preserveValue
-          end={value}
-          decimals={0}
-          formattingFn={formattingFn}
-        />
+        {moneyFmt.format(Number.isFinite(value) ? value : 0)}
       </span>
     </div>
   );

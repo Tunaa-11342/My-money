@@ -1,39 +1,52 @@
-"use server"
+"use server";
 
-import { db } from "../db"
+import { db } from "../db";
 import {
   CreateTransactionSchema,
   CreateTransactionSchemaType,
-} from "../schemas/transactions"
-import { GetFormatterForCurrency } from "../utils"
-import { currentUser } from "@clerk/nextjs/server"
-import { redirect } from "next/navigation"
+} from "../schemas/transactions";
+import { GetFormatterForCurrency } from "../utils";
+import { currentUser } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+
+// Ép Decimal | number | string -> number an toàn để dùng cho formatter + Float increment/decrement
+function toNumberAmount(v: unknown): number {
+  // Prisma Decimal có .toNumber()
+  if (v && typeof v === "object" && "toNumber" in v && typeof (v as any).toNumber === "function") {
+    return (v as any).toNumber();
+  }
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
 
 export async function createTransaction(userId: string, form: CreateTransactionSchemaType) {
-  const parsedBody = CreateTransactionSchema.safeParse(form)
+  const parsedBody = CreateTransactionSchema.safeParse(form);
   if (!parsedBody.success) {
-    throw new Error(parsedBody.error.message)
+    throw new Error(parsedBody.error.message);
   }
 
-  const { amount, categoryId, date, description, type } = parsedBody.data
+  const { amount, categoryId, date, description, type } = parsedBody.data;
+
+  // amount từ form thường là number (Zod), nhưng cứ ép 1 lần cho chắc khi update Float
+  const amountNum = toNumberAmount(amount);
 
   const categoryRow = await db.category.findUnique({
     where: { id: categoryId },
-  })
+  });
 
   if (!categoryRow) {
-    throw new Error("Danh mục không tồn tại")
+    throw new Error("Danh mục không tồn tại");
   }
 
   await db.$transaction([
     db.transaction.create({
       data: {
         userId,
-        amount,
+        amount, // nếu Transaction.amount là Decimal thì Prisma vẫn nhận number ok
         date,
         description: description || "",
         type,
-        category: categoryRow.name, 
+        category: categoryRow.name,
         categoryIcon: categoryRow.icon,
       },
     }),
@@ -52,12 +65,12 @@ export async function createTransaction(userId: string, form: CreateTransactionS
         day: date.getUTCDate(),
         month: date.getUTCMonth(),
         year: date.getUTCFullYear(),
-        expense: type === "expense" ? amount : 0,
-        income: type === "income" ? amount : 0,
+        expense: type === "expense" ? amountNum : 0,
+        income: type === "income" ? amountNum : 0,
       },
       update: {
-        expense: { increment: type === "expense" ? amount : 0 },
-        income: { increment: type === "income" ? amount : 0 },
+        expense: { increment: type === "expense" ? amountNum : 0 },
+        income: { increment: type === "income" ? amountNum : 0 },
       },
     }),
 
@@ -73,15 +86,15 @@ export async function createTransaction(userId: string, form: CreateTransactionS
         userId,
         month: date.getUTCMonth(),
         year: date.getUTCFullYear(),
-        expense: type === "expense" ? amount : 0,
-        income: type === "income" ? amount : 0,
+        expense: type === "expense" ? amountNum : 0,
+        income: type === "income" ? amountNum : 0,
       },
       update: {
-        expense: { increment: type === "expense" ? amount : 0 },
-        income: { increment: type === "income" ? amount : 0 },
+        expense: { increment: type === "expense" ? amountNum : 0 },
+        income: { increment: type === "income" ? amountNum : 0 },
       },
     }),
-  ])
+  ]);
 }
 
 export async function getBalanceStats(userId: string, from: Date, to: Date) {
@@ -89,27 +102,28 @@ export async function getBalanceStats(userId: string, from: Date, to: Date) {
     by: ["type"],
     where: { userId, date: { gte: from, lte: to } },
     _sum: { amount: true },
-  })
+  });
+
+  const expenseRaw = totals.find((t) => t.type === "expense")?._sum.amount ?? 0;
+  const incomeRaw = totals.find((t) => t.type === "income")?._sum.amount ?? 0;
 
   return {
-    expense: totals.find((t) => t.type === "expense")?._sum.amount || 0,
-    income: totals.find((t) => t.type === "income")?._sum.amount || 0,
-  }
+    expense: toNumberAmount(expenseRaw),
+    income: toNumberAmount(incomeRaw),
+  };
 }
 
 export type GetTransactionHistoryResponseType = Awaited<
   ReturnType<typeof getTransactionsHistory>
->
+>;
 
 export async function getTransactionsHistory(from: Date, to: Date) {
-  const user = await currentUser()
-  if (!user) {
-    redirect("/sign-in")
-  }
+  const user = await currentUser();
+  if (!user) redirect("/sign-in");
 
   let userSettings = await db.userSettings.findUnique({
     where: { userId: user.id },
-  })
+  });
 
   if (!userSettings) {
     userSettings = await db.userSettings.create({
@@ -117,7 +131,7 @@ export async function getTransactionsHistory(from: Date, to: Date) {
         userId: user.id,
         currency: "VND",
       },
-    })
+    });
 
     const defaultCategories = [
       { name: "Ăn uống", type: "expense", icon: "🍚" },
@@ -126,14 +140,14 @@ export async function getTransactionsHistory(from: Date, to: Date) {
       { name: "Dầu gội", type: "expense", icon: "🧴" },
       { name: "Tiền lương", type: "income", icon: "💵" },
       { name: "Tiền thưởng", type: "income", icon: "🎁" },
-    ]
+    ];
 
     await db.category.createMany({
       data: defaultCategories.map((c) => ({ ...c, userId: user.id })),
-    })
+    });
   }
 
-  const formatter = GetFormatterForCurrency(userSettings.currency)
+  const formatter = GetFormatterForCurrency(userSettings.currency);
 
   const transactions = await db.transaction.findMany({
     where: {
@@ -141,26 +155,24 @@ export async function getTransactionsHistory(from: Date, to: Date) {
       date: { gte: from, lte: to },
     },
     orderBy: { date: "desc" },
-  })
+  });
 
   return transactions.map((transaction) => ({
     ...transaction,
-    formattedAmount: formatter.format(transaction.amount),
-  }))
+    formattedAmount: formatter.format(toNumberAmount(transaction.amount)),
+  }));
 }
 
 export async function DeleteTransaction(id: string) {
-  const user = await currentUser()
-  if (!user) {
-    redirect("/sign-in")
-  }
+  const user = await currentUser();
+  if (!user) redirect("/sign-in");
 
   const transaction = await db.transaction.findUnique({
     where: { userId: user.id, id },
-  })
-  if (!transaction) {
-    throw new Error("bad request")
-  }
+  });
+  if (!transaction) throw new Error("bad request");
+
+  const amt = toNumberAmount(transaction.amount);
 
   await db.$transaction([
     db.transaction.delete({
@@ -178,10 +190,10 @@ export async function DeleteTransaction(id: string) {
       },
       data: {
         ...(transaction.type === "expense" && {
-          expense: { decrement: transaction.amount },
+          expense: { decrement: amt },
         }),
         ...(transaction.type === "income" && {
-          income: { decrement: transaction.amount },
+          income: { decrement: amt },
         }),
       },
     }),
@@ -196,12 +208,12 @@ export async function DeleteTransaction(id: string) {
       },
       data: {
         ...(transaction.type === "expense" && {
-          expense: { decrement: transaction.amount },
+          expense: { decrement: amt },
         }),
         ...(transaction.type === "income" && {
-          income: { decrement: transaction.amount },
+          income: { decrement: amt },
         }),
       },
     }),
-  ])
+  ]);
 }
