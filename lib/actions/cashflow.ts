@@ -2,40 +2,36 @@
 
 import { db } from "@/lib/db";
 import type { PlannedPeriodType } from "@prisma/client";
+import { ensureMonthlyBudget } from "@/lib/actions/monthly-budget";
 
 export type CashflowForecastRow = {
-  monthKey: string; // YYYY-MM
+  monthKey: string;
 
-  fixedIncome: number; // monthlyBudget (thu nhập cố định)
-  variableIncome: number; // tổng thu nhập phát sinh (transactions income) trong tháng
-  income: number; // total = fixedIncome + variableIncome
+  fixedIncome: number;
+  variableIncome: number;
+  income: number;
 
-  plannedSpending: number; // planned spending allocated into this month
-  goalSaving: number; // recommended saving for pinned saving goals
-  net: number; // income - plannedSpending - goalSaving
+  plannedSpending: number;
+  goalSaving: number;
+  net: number;
 };
 
 export type CashflowSummary = {
   currency: string;
   fixedIncome: number;
-
   currentMonthKey: string;
-
-  // Thu nhập phát sinh (không cố định) trong tháng hiện tại
   currentMonthVariableIncome: number;
-
-  // Tổng thu nhập tháng hiện tại = cố định + phát sinh
   currentMonthTotalIncome: number;
-
   currentMonthActualExpense: number;
   currentMonthPlannedSpending: number;
   currentMonthGoalSaving: number;
-
   forecastMonths: number;
   forecast: CashflowForecastRow[];
+  currentMonthTotalBudget: number;
+  currentMonthCarryOver: number;
 
   warnings: {
-    negativeMonths: string[]; // monthKey where net < 0
+    negativeMonths: string[];
   };
 };
 
@@ -63,12 +59,6 @@ function addDaysUTC(d: Date, days: number) {
   return new Date(d.getTime() + days * 86400000);
 }
 
-/**
- * ISO week (Monday as first day).
- * Accepts:
- * - "YYYY-W02"
- * - "YYYY-02" (fallback if user stored week without W)
- */
 function getIsoWeekStartUTC(year: number, week: number) {
   const jan4 = new Date(Date.UTC(year, 0, 4, 0, 0, 0, 0));
   const jan4Day = jan4.getUTCDay() || 7; // 1..7
@@ -82,7 +72,6 @@ function parsePlannedPeriodRangeUTC(
 ) {
   switch (periodType) {
     case "WEEKLY": {
-      // Expected: "YYYY-W02" (or fallback "YYYY-02")
       const [yStr, wStrRaw] = periodKey.split("-");
       const year = parseInt(yStr, 10);
       const week = parseInt((wStrRaw ?? "").replace("W", ""), 10);
@@ -92,7 +81,6 @@ function parsePlannedPeriodRangeUTC(
     }
 
     case "MONTHLY": {
-      // "YYYY-MM"
       const [yStr, mStr] = periodKey.split("-");
       const year = parseInt(yStr, 10);
       const month = parseInt(mStr, 10); // 1..12
@@ -102,7 +90,6 @@ function parsePlannedPeriodRangeUTC(
     }
 
     case "YEARLY": {
-      // "YYYY"
       const year = parseInt(periodKey, 10);
       const start = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
       const end = new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0, 0));
@@ -110,18 +97,16 @@ function parsePlannedPeriodRangeUTC(
     }
 
     case "QUARTERLY": {
-      // "YYYY-Q1" ... "YYYY-Q4"
       const [yStr, qStr] = periodKey.split("-");
       const year = parseInt(yStr, 10);
-      const quarter = parseInt(qStr.replace("Q", ""), 10); // 1..4
-      const startMonth = (quarter - 1) * 3; // 0,3,6,9
+      const quarter = parseInt(qStr.replace("Q", ""), 10);
+      const startMonth = (quarter - 1) * 3;
       const start = new Date(Date.UTC(year, startMonth, 1, 0, 0, 0, 0));
       const end = new Date(Date.UTC(year, startMonth + 3, 1, 0, 0, 0, 0));
       return { start, end };
     }
 
     default: {
-      // Fallback -> treat as MONTHLY
       const [yStr, mStr] = periodKey.split("-");
       const year = parseInt(yStr, 10);
       const month = parseInt(mStr, 10) || 1;
@@ -132,9 +117,6 @@ function parsePlannedPeriodRangeUTC(
   }
 }
 
-/**
- * Allocate an amount across months proportionally to number of days in each month segment.
- */
 function allocateAmountToMonthsUTC(start: Date, end: Date, amount: number) {
   const totalDays = Math.max(
     1,
@@ -185,8 +167,11 @@ export async function getCashflowSummary(
   );
   const nextMonthStart = addMonthsUTC(thisMonthStart, 1);
   const currentMonthKey = toMonthKeyUTC(thisMonthStart);
+  const mb = await ensureMonthlyBudget(userId, currentMonthKey);
 
-  // Actual expense in current month
+  const currentMonthTotalBudget = Number(mb.totalBudget ?? 0);
+  const currentMonthCarryOver = Number(mb.carryOver ?? 0);
+
   const expenseAgg = await db.transaction.aggregate({
     where: {
       userId,
@@ -200,7 +185,6 @@ export async function getCashflowSummary(
   });
   const currentMonthActualExpense = Number(expenseAgg._sum.amount ?? 0);
 
-  // Variable income (transactions type="income") within forecast range
   const forecastEnd = addMonthsUTC(thisMonthStart, Math.max(1, monthsAhead));
 
   const incomeTxs = await db.transaction.findMany({
@@ -226,7 +210,6 @@ export async function getCashflowSummary(
     variableIncomeByMonth[currentMonthKey] || 0;
   const currentMonthTotalIncome = fixedIncome + currentMonthVariableIncome;
 
-  // Plan
   const plannedRows = await db.plannedSpending.findMany({
     where: { userId },
     select: {
@@ -251,7 +234,6 @@ export async function getCashflowSummary(
     }
   }
 
-  // Saving goals (pinned): convert into recommended monthly saving until targetDate
   const goals = await db.savingGoal.findMany({
     where: { userId, isPinned: true },
     select: {
@@ -275,7 +257,6 @@ export async function getCashflowSummary(
     const start = thisMonthStart;
     const end = startOfMonthUTC(td.getUTCFullYear(), td.getUTCMonth() + 1);
 
-    // if already passed, skip
     if (end <= start) continue;
 
     const allocated = allocateAmountToMonthsUTC(start, end, remaining);
@@ -284,7 +265,6 @@ export async function getCashflowSummary(
     }
   }
 
-  // Build forecast rows
   const forecast: CashflowForecastRow[] = [];
   const negativeMonths: string[] = [];
 
@@ -321,11 +301,11 @@ export async function getCashflowSummary(
     currentMonthKey,
     currentMonthVariableIncome,
     currentMonthTotalIncome,
-
+    currentMonthCarryOver,
     currentMonthActualExpense,
     currentMonthPlannedSpending,
     currentMonthGoalSaving,
-
+    currentMonthTotalBudget,
     forecastMonths: monthsAhead,
     forecast,
 
