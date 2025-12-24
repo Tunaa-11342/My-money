@@ -14,6 +14,7 @@ model User {
   createdAt DateTime      @default(now())
   imageUrl  String?
 
+  monthlyBudgets MonthlyBudget[]
   userSettings     UserSettings?
   memberships      Membership[]
   plannedSpendings PlannedSpending[]
@@ -30,6 +31,7 @@ model UserSettings {
   currency      String  @default("VND")
   monthlyBudget Float   @default(0)
   firstLogin    Boolean @default(true)
+  
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -229,4 +231,20 @@ model RecurringCashflowItem {
 
   @@index([userId])
   @@index([userId, kind])
+}
+
+model MonthlyBudget {
+  id          String   @id @default(cuid())
+  userId      String
+  month       String   // format: "YYYY-MM"
+  baseIncome  Float    @default(0) // lương cố định tháng này (snapshot)
+  carryOver   Float    @default(0) // dư tháng trước chuyển sang
+  totalBudget Float    @default(0) // = baseIncome + carryOver (snapshot)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, month])
+  @@index([userId, month])
 }

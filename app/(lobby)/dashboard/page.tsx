@@ -6,10 +6,12 @@ import CreateTransactionDialog from "@/components/dialog/create-transaction";
 import Overview from "./_components/overview";
 import History from "./_components/history";
 import { WizardDialogWrapper } from "@/components/dialog/wizard-dialog-wrapper";
+import { ensureMonthlyBudget } from "@/lib/actions/monthly-budget";
 
 export default async function DashboardPage() {
   const rawUser = await getCachedUser();
   if (!rawUser) redirect("/signin");
+  await ensureMonthlyBudget(rawUser.id);
 
   const safeUser = {
     id: rawUser.id,

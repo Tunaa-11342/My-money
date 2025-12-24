@@ -1,5 +1,6 @@
 "use server";
 
+import { validatePlanAgainstMonthlyBudget } from "@/lib/actions/planned-spending-budget";
 import { db } from "@/lib/db";
 import { PlannedPeriodType } from "@prisma/client";
 import type { SpendingPlan, PlanTimeScale, PlanStatus } from "@/types";
@@ -45,7 +46,7 @@ function getPeriodInfo(periodType: PlannedPeriodType, periodKey: string) {
       const endMonth = startMonth + 2;
 
       start = new Date(Date.UTC(year, startMonth, 1, 0, 0, 0, 0));
-      end = new Date(Date.UTC(year, endMonth + 1, 0, 23, 59, 59, 999)); // ngày 0 của tháng tiếp theo
+      end = new Date(Date.UTC(year, endMonth + 1, 0, 23, 59, 59, 999));
       break;
     }
 
@@ -63,8 +64,6 @@ function getPeriodInfo(periodType: PlannedPeriodType, periodKey: string) {
       const [yStr, wStr] = periodKey.split("-");
       year = parseInt(yStr, 10);
       weekOfYear = parseInt(wStr.replace("W", ""), 10);
-
-      // ISO week: Monday
       const jan4 = new Date(Date.UTC(year, 0, 4));
       const dayOfWeek = jan4.getUTCDay() || 7; // 1–7
       const firstWeekMonday = new Date(
@@ -126,14 +125,7 @@ export async function getUserSpendingPlans(
 
   for (const row of rows) {
     const info = getPeriodInfo(row.periodType, row.periodKey);
-
-    // ✅ Luôn tính trong đúng khoảng thời gian của kế hoạch
-    // (không lấy từ createdAt cho YEARLY tương lai — sẽ bị tính sai)
     const rangeStart = info.start;
-
-    // ❗ Transaction không có categoryId trong schema hiện tại,
-    // nên filter theo categoryId là sai.
-    // Tạm thời filter theo tên category đang lưu trong Transaction.category
     const categoryName = row.category?.name;
 
     const txAgg = await db.transaction.aggregate({
@@ -197,7 +189,6 @@ export async function getUserSpendingPlans(
   return plans;
 }
 
-
 export async function togglePlanPinned(
   userId: string,
   planId: string,
@@ -259,8 +250,34 @@ export interface CreatePlannedSpendingInput {
 
 export async function createPlannedSpending(input: CreatePlannedSpendingInput) {
   const periodKey = buildPeriodKey(input);
-
   const targetAmountDecimal = input.targetAmount;
+  const settings = await db.userSettings.findUnique({
+    where: { userId: input.userId },
+    select: { monthlyBudget: true },
+  });
+
+  const totalBudget = Number(settings?.monthlyBudget ?? 0);
+
+  if (input.periodType === PlannedPeriodType.MONTHLY) {
+    const planned = await db.plannedSpending.aggregate({
+      where: {
+        userId: input.userId,
+        periodType: PlannedPeriodType.MONTHLY,
+        periodKey, 
+      },
+      _sum: { targetAmount: true },
+    });
+
+    const plannedSum = Number(planned?._sum?.targetAmount ?? 0);
+    const nextTotal = plannedSum + Number(targetAmountDecimal ?? 0);
+
+    if (nextTotal > totalBudget) {
+      const overBy = nextTotal - totalBudget;
+      throw new Error(
+        `Kế hoạch vượt ngân sách tháng ${periodKey}. Vượt ${overBy.toLocaleString("vi-VN")} đ`
+      );
+    }
+  }
 
   const created = await db.plannedSpending.create({
     data: {

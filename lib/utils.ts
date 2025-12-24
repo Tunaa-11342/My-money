@@ -58,3 +58,34 @@ export function formatCurrency(amount: number, currency: string = 'VND') {
     minimumFractionDigits: 0,
   }).format(amount)
 }
+
+export function pad2(n: number) {
+  return n.toString().padStart(2, "0");
+}
+
+export function getMonthKey(date: Date = new Date()) {
+  const y = date.getFullYear();
+  const m = date.getMonth() + 1;
+  return `${y}-${pad2(m)}`; 
+}
+
+export function monthKeyToRange(monthKey: string) {
+  const [yStr, mStr] = monthKey.split("-");
+  const y = Number(yStr);
+  const m = Number(mStr);
+  const start = new Date(y, m - 1, 1, 0, 0, 0, 0);
+  const end = new Date(y, m, 1, 0, 0, 0, 0); 
+  return { start, end };
+}
+
+export function prevMonthKey(monthKey: string) {
+  const [yStr, mStr] = monthKey.split("-");
+  let y = Number(yStr);
+  let m = Number(mStr);
+  m -= 1;
+  if (m === 0) {
+    m = 12;
+    y -= 1;
+  }
+  return `${y}-${pad2(m)}`;
+}
